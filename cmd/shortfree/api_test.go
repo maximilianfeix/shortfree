@@ -156,7 +156,10 @@ func TestExportAPIJSON(t *testing.T) {
 		{"dev.json", func(t *testing.T, b []byte) {
 			var l APIList
 			mustJSON(t, b, &l)
-			want := TLDList{Available: []string{"q7", "abc"}, Dropping: l.Dropping, Unverified: []string{"old", "z9z"}, Stale: []string{"old"}, Unknown: []string{"u7"}}
+			want := TLDList{Available: []string{"q7", "abc"}, Dropping: l.Dropping, Unverified: []string{"old", "z9z"}, Stale: []string{"old"}, Unknown: []string{"u7"}, Checked: l.Checked}
+			if l.Checked["q7"] != time.Date(2026, 10, 25, 0, 0, 0, 0, time.UTC).Unix() || len(l.Checked) != 2 {
+				t.Errorf("checked = %v", l.Checked)
+			}
 			if l.TLD != "dev" || !reflect.DeepEqual(l.TLDList, want) || len(l.Dropping) != 1 {
 				t.Errorf("dev.json = %s", b)
 			}

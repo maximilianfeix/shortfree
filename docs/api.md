@@ -40,7 +40,7 @@ The CSV files are also attached to the [`data` release](https://github.com/maxim
 | `stale` | subset of `unverified`: was RDAP-verified, but the evidence is too old to publish as verified |
 | `unknown` | no DNS answer at the last sweep and no current RDAP answer: **not checked**, neither free nor taken |
 
-Every `{tld}.json` also carries `max_evidence_age_days` and `oldest_check` (the oldest RDAP check behind a name in `available`). `index.json` has the same definitions under `statuses`.
+Every `{tld}.json` also carries `max_evidence_age_days`, `oldest_check` (the oldest RDAP check behind a name in `available`) and `checked`, a map from each label in `available` to the Unix time of its RDAP check. `index.json` has the same definitions under `statuses`.
 
 ### Coverage
 

@@ -36,10 +36,12 @@ type TLDList struct {
 	Unverified []string   `json:"unverified"` // not in DNS, no current RDAP evidence
 	Stale      []string   `json:"stale"`      // part of Unverified: RDAP evidence expired
 	Unknown    []string   `json:"unknown"`    // no DNS answer at the last sweep: not checked
+	// Checked maps every label in Available to its RDAP check (Unix seconds).
+	Checked map[string]int64 `json:"checked,omitempty"`
 }
 
 func newTLDList() *TLDList {
-	return &TLDList{Available: []string{}, Dropping: []Dropping{}, Unverified: []string{}, Stale: []string{}, Unknown: []string{}}
+	return &TLDList{Available: []string{}, Dropping: []Dropping{}, Unverified: []string{}, Stale: []string{}, Unknown: []string{}, Checked: map[string]int64{}}
 }
 
 // Available is data/available.json.
@@ -160,6 +162,7 @@ func cmdExport(args []string) error {
 			switch statusOf(e, now, *maxAge) {
 			case "available":
 				list.Available = append(list.Available, label)
+				list.Checked[label] = e.Checked
 				s.Available++
 			case "dropping":
 				list.Dropping = append(list.Dropping, droppingOf(label, e))

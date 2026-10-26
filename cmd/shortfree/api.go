@@ -243,6 +243,11 @@ func byLength(l *TLDList, n int) TLDList {
 			out.Dropping = append(out.Dropping, d)
 		}
 	}
+	for k, v := range l.Checked {
+		if len(k) == n {
+			out.Checked[k] = v
+		}
+	}
 	return out
 }
 

@@ -345,6 +345,10 @@ components:
           type: array
           description: Labels without DNS answer at the last sweep and without current RDAP answer; not checked, not taken
           items: { type: string }
+        checked:
+          type: object
+          description: Label in available -> Unix time (seconds) of its RDAP check
+          additionalProperties: { type: integer }
     CSV:
       type: string
       description: |

@@ -12,14 +12,13 @@ import (
 	"time"
 
 	"github.com/maximilianfeix/shortfree/internal/names"
-	"github.com/maximilianfeix/shortfree/internal/rdap"
 	"github.com/maximilianfeix/shortfree/internal/store"
 )
 
 // Dropping is a registered name in redemption or pending delete.
 type Dropping struct {
 	Name    string    `json:"name"`
-	Expires time.Time `json:"expires,omitempty"`
+	Expires time.Time `json:"expires,omitzero"`
 }
 
 // TLDList is the public per-TLD result for 1-3 character names.
@@ -73,6 +72,7 @@ func cmdExport(args []string) error {
 	four := fs.String("four-out", "dist/4", "output directory for 4 character text lists (empty = skip)")
 	readme := fs.String("readme", "README.md", "README to update between shortfree markers (empty = skip)")
 	keepDays := fs.Int("changes-days", 30, "days of history kept in changes.json")
+	apiOut := fs.String("api-out", "dist/api", "output directory for the static JSON/CSV API (empty = skip)")
 	fs.Parse(args)
 
 	st, err := store.Load(*statePath)
@@ -96,18 +96,16 @@ func cmdExport(args []string) error {
 		for _, label := range st.Labels(tld) {
 			e := st.TLDs[tld][label]
 			s := ls[fmt.Sprint(len(label))]
-			switch {
-			case e.RDAP == string(rdap.Available):
+			switch statusOf(e) {
+			case "available":
 				list.Available = append(list.Available, label)
 				s.Available++
-			case e.RDAP == string(rdap.Dropping):
+			case "dropping":
 				list.Dropping = append(list.Dropping, Dropping{label, e.ExpiresAt()})
 				s.Dropping++
-			case e.RDAP == "" || e.RDAP == string(rdap.Error):
-				if e.DNS == "free" {
-					list.Unverified = append(list.Unverified, label)
-					s.Unverified++
-				}
+			case "unverified":
+				list.Unverified = append(list.Unverified, label)
+				s.Unverified++
 			}
 		}
 		avail.TLDs[tld] = list
@@ -145,6 +143,11 @@ func cmdExport(args []string) error {
 	}
 	if err := writeJSON(filepath.Join(*out, "changes.json"), changes); err != nil {
 		return err
+	}
+	if *apiOut != "" {
+		if err := writeAPI(*apiOut, st, order, &avail, &stats, changes, *keepDays); err != nil {
+			return err
+		}
 	}
 	if *readme != "" {
 		return updateReadme(*readme, &avail, &stats, changes)

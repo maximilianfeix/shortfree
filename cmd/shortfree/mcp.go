@@ -27,7 +27,8 @@ func appVersion() string {
 	return "dev"
 }
 
-const mcpInstructions = `shortfree knows every unregistered 1-4 character domain on .com .net .de .ai .io .dev .app .tools (rescanned daily) and can check any domain live.
+// mcpInstructions is built from DefaultTLDs so it never lists stale TLDs.
+var mcpInstructions = `shortfree knows every unregistered 1-4 character domain on ` + dotTLDs() + ` (rescanned daily) and can check any domain live.
 
 Workflow: use find_free_domains or suggest_domains to discover names from the daily snapshot, then confirm the ones the user cares about with check_domains (live DNS + registry RDAP) before calling them free. Statuses: rdap_verified = the registry's RDAP said "not registered" at the last scan; unverified = not in DNS, RDAP check still pending; dns_only = 4 character name not in DNS (never RDAP-checked, may be registered without name servers); dropping = registered but in redemption/pending delete. premium_likely = 1-2 character name outside .com/.net/.de, usually reserved or premium-priced by the registry even when RDAP says available. Final price and availability are always decided by the registrar.`
 
@@ -74,29 +75,29 @@ func (s *mcpServer) server() *mcp.Server {
 			`Returns per domain: dns (free|taken|unknown), rdap (available|registered|dropping|error, "-" if the TLD has no RDAP endpoint in shortfree), ` +
 			`verdict ("FREE" = registry confirms not registered; "taken"; "dropping soon"; "probably free (...)" when only DNS answered), ` +
 			`free (true only for FREE) and premium_likely (1-2 character names outside .com/.net/.de, which registries usually reserve or sell at premium prices although RDAP reports them as unregistered). ` +
-			`RDAP works for .com .net .de .ai .io .dev .app .tools; other TLDs get a DNS-only verdict. Use this before telling a user a domain is free. Takes about 1 s per domain (rate-limited per registry).`,
+			`RDAP works for every TLD in the snapshot (` + dotTLDs() + `); other TLDs get a DNS-only verdict. Names shorter than a registry's minimum length are reported as not registrable. Use this before telling a user a domain is free. Takes about 1 s per domain (rate-limited per registry).`,
 		Annotations: readOnly("Check domains live"),
 	}, s.checkDomains)
 
 	mcp.AddTool(srv, &mcp.Tool{
 		Name: "find_free_domains",
-		Description: `Search the daily snapshot of unregistered 1-4 character domains on .com .net .de .ai .io .dev .app .tools. ` +
+		Description: `Search the daily snapshot of unregistered 1-4 character domains on ` + dotTLDs() + `. ` +
 			`Filters: tld (one or comma-separated, default all), length (1-4, default all, shortest first), kind (letters|digits|mixed|any), contains, starts_with, include_dropping. ` +
 			`Each result has a status: rdap_verified (1-3 chars, registry RDAP said not registered at the last scan), unverified (1-3 chars, not in DNS, RDAP pending), ` +
 			`dns_only (4 chars: not in the zone, never RDAP-checked; may be registered without name servers) or dropping (registered, in redemption/pending delete, with expiry; only with include_dropping). ` +
-			`Results are ordered by length, then status, then TLD (com net de ai io dev app tools), then a-z before 0-9. total_matches counts all hits even when limit (default 100, max 1000) cuts the list. ` +
+			`Results are ordered by length, then status, then TLD (` + strings.Join(DefaultTLDs, " ") + `), then a-z before 0-9. total_matches counts all hits even when limit (default 100, max 1000) cuts the list. ` +
 			`The snapshot is up to a day old: confirm picks with check_domains.`,
 		Annotations: readOnly("Find free short domains"),
 	}, s.findFreeDomains)
 
 	mcp.AddTool(srv, &mcp.Tool{
 		Name: "suggest_domains",
-		Description: `Turn a word, brand or project idea into short (max 4 character) domain names that are free on .com .net .de .ai .io .dev .app .tools, best first. ` +
+		Description: `Turn a word, brand or project idea into short (max 4 character) domain names that are free on ` + dotTLDs() + `, best first. ` +
 			`Deterministic heuristic, scored: the word itself if <= 4 chars (100), initials of a multi-word idea (95), a short word of the idea (90), initials of the first two words (85), first 4/3/2 letters (80/75/70), ` +
 			`consonant skeleton without vowels like flickr -> flckr (78/73), two-word blends 2+2, 1+3, 3+1 letters (72/68), then startup patterns on those bases: ` +
 			`add a digit 1-9 (55-47), add x (50), add hq or ly (48), go/my prefix (45). Stop words (the, of, and, ...) are dropped, accents transliterated, camelCase split. ` +
 			`Each candidate is looked up in the daily snapshot per TLD; 1-2 character names on TLDs other than .com/.net/.de lose 15 points because they are usually premium. ` +
-			`Ties go to the TLD order given in tlds (default com net de ai io dev app tools), then to RDAP-verified over unverified/dns_only. ` +
+			`Ties go to the TLD order given in tlds (default ` + strings.Join(DefaultTLDs, " ") + `), then to RDAP-verified over unverified/dns_only. ` +
 			`Longer names are out of scope: check those with check_domains. Confirm favourites with check_domains before registering.`,
 		Annotations: readOnly("Suggest short domains"),
 	}, s.suggestDomains)
@@ -134,7 +135,7 @@ func (s *mcpServer) checkDomains(ctx context.Context, _ *mcp.CallToolRequest, in
 // ---- find_free_domains ----
 
 type findInput struct {
-	TLD             string `json:"tld,omitempty" jsonschema:"TLD without or with dot, comma-separated for several (io,dev). Empty = all: com net de ai io dev app tools"`
+	TLD             string `json:"tld,omitempty" jsonschema:"TLD without or with dot, comma-separated for several (io,dev). Empty = all scanned TLDs"`
 	Length          int    `json:"length,omitempty" jsonschema:"exact label length 1-4, not counting the TLD. 0 = all lengths"`
 	Kind            string `json:"kind,omitempty" jsonschema:"letters (a-z only), digits (0-9 only), mixed (letters+digits or hyphen) or any (default)"`
 	Contains        string `json:"contains,omitempty" jsonschema:"only labels that contain this text, e.g. ai"`
@@ -295,7 +296,7 @@ func (s *mcpServer) findFreeDomains(ctx context.Context, _ *mcp.CallToolRequest,
 
 type suggestInput struct {
 	Idea      string   `json:"idea" jsonschema:"a word, brand or project idea, e.g. Flicker or deep mind labs"`
-	TLDs      []string `json:"tlds,omitempty" jsonschema:"TLDs to consider in order of preference, e.g. [io, dev]. Empty = com net de ai io dev app tools"`
+	TLDs      []string `json:"tlds,omitempty" jsonschema:"TLDs to consider in order of preference, e.g. [io, dev]. Empty = all scanned TLDs in the default order (com net de ai io ...)"`
 	MaxLength int      `json:"max_length,omitempty" jsonschema:"longest label to suggest, 1-4, default 4"`
 	Limit     int      `json:"limit,omitempty" jsonschema:"maximum suggestions, default 20, max 100"`
 }
@@ -472,3 +473,6 @@ func (s *mcpServer) domainStats(ctx context.Context, _ *mcp.CallToolRequest, in 
 	}
 	return nil, out, nil
 }
+
+// dotTLDs returns the scanned TLDs as ".com .net ...".
+func dotTLDs() string { return "." + strings.Join(DefaultTLDs, " .") }

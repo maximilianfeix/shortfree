@@ -1,9 +1,10 @@
 name: bootstrap
 
-# One-off full scan on 15 parallel runners: one job per TLD for 1-3
-# characters (DNS + up to ~5 h of RDAP, each runner with its own IP and rate
-# limits) and one job per 4 character shard. The publish job merges
-# everything into a fresh data release. The daily scan takes over afterwards.
+# One-off full scan: one job per TLD for 1-3 characters (DNS + up to ~5 h
+# of RDAP, each runner with its own IP and rate limits) and one job per 4
+# character shard. The publish job merges everything into a fresh data
+# release. The daily scan takes over afterwards; TLDs added later do not
+# need a new bootstrap, the daily scan fills them in.
 on:
   workflow_dispatch:
     inputs:
@@ -33,14 +34,27 @@ jobs:
             echo "A data release exists; rerun with overwrite=true to replace it."; exit 1
           fi
 
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      tlds: ${{ steps.plan.outputs.tlds }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - id: plan
+        run: echo "tlds=$(go run ./cmd/shortfree tlds -json)" | tee -a "$GITHUB_OUTPUT"
+
   short:
-    needs: guard
+    needs: [guard, plan]
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
       fail-fast: false
       matrix:
-        tld: [com, net, de, ai, io, dev, app, tools]
+        tld: ${{ fromJSON(needs.plan.outputs.tlds) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -101,7 +115,10 @@ jobs:
           # give them the state/ and bitmaps/ layout merge expects.
           for d in parts/short-*; do mkdir -p "$d/state" && mv "$d"/*.gz "$d/state/"; done
           for d in parts/four-*; do mkdir -p "$d/bitmaps" && mv "$d"/*.bin "$d/bitmaps/"; done
-          ./shortfree merge parts/*
+          # -or: every job swept a disjoint part from scratch, so state is
+          # merged per label and bitmaps are OR-ed (the daily scan instead
+          # takes each TLD from the job that owns it).
+          ./shortfree merge -or parts/*
           ls -la state bitmaps
       - uses: ./.github/actions/publish
         with:

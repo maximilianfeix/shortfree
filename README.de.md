@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  Jede nicht registrierte Domain mit 1–4 Zeichen auf <b>.com .net .de .ai .io .dev .app .tools</b>,<br>
+  Jede nicht registrierte Domain mit 1–4 Zeichen auf <b>.com .net .org .io .ai .dev</b> und <a href="docs/tlds.md">weiteren TLDs</a>,<br>
   jeden Tag direkt bei den Nameservern und RDAP-Diensten der Registries geprüft.
 </p>
 
@@ -49,7 +49,7 @@
 <a id="try-it"></a>
 ## Ausprobieren
 
-**Ohne Installation:** [maximilianfeix.github.io/shortfree](https://maximilianfeix.github.io/shortfree/) öffnen, 1–4 Zeichen eintippen und den Status auf allen acht TLDs sehen. Die komplette Liste lässt sich nach TLD, Länge und Zeichenart filtern.
+**Ohne Installation:** [maximilianfeix.github.io/shortfree](https://maximilianfeix.github.io/shortfree/) öffnen, 1–4 Zeichen eintippen und den Status auf allen gescannten TLDs sehen. Die komplette Liste lässt sich nach TLD, Länge und Zeichenart filtern.
 
 **Kommandozeile** (Go 1.27 oder neuer):
 
@@ -84,7 +84,7 @@ Das Begleit-Repo [free-short-domains](https://github.com/maximilianfeix/free-sho
 
 | Datei | Inhalt |
 |---|---|
-| [`csv/all.csv`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/csv/all.csv) | jede per RDAP bestätigte freie Domain mit 1–3 Zeichen auf allen acht TLDs |
+| [`csv/all.csv`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/csv/all.csv) | jede per RDAP bestätigte freie Domain mit 1–3 Zeichen auf allen gescannten TLDs |
 | `csv/<tld>.csv`, z. B. [`csv/dev.csv`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/csv/dev.csv) | Namen mit 1–3 Zeichen und Status `available`, `dropping` oder `unverified` |
 | `txt/<tld>.txt`, z. B. [`txt/io.txt`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/txt/io.txt) | bestätigte freie Domains mit 1–3 Zeichen, eine pro Zeile |
 | `four-letter/<tld>.txt`, z. B. [`four-letter/com.txt`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/four-letter/com.txt) | Namen aus 4 Buchstaben (a–z), die nicht in der Zone stehen |
@@ -109,18 +109,18 @@ shortfree
 
 shortfree kann nicht
 
-- **Preise oder Reservierungen sehen.** Registries reservieren manche Namen und verkaufen andere zu Premium-Preisen. RDAP meldet beides als nicht registriert. Das betrifft vor allem Namen mit 1–2 Zeichen auf .ai .io .dev .app .tools. Den echten Preis zeigt der Registrar.
+- **Preise oder Reservierungen sehen.** Registries reservieren manche Namen und verkaufen andere zu Premium-Preisen. RDAP meldet beides als nicht registriert. Das betrifft vor allem Namen mit 1–2 Zeichen auf den meisten TLDs außer .com, .net und .de. Den echten Preis zeigt der Registrar.
 - **Namen mit 4 Zeichen per RDAP prüfen.** Sie sind nur per DNS geprüft. Ein registrierter Name ohne Nameserver kann deshalb in den 4-Zeichen-Listen auftauchen. Vor dem Kauf einen Namen mit `shortfree check` prüfen.
 - **aktueller sein als der letzte Scan.** Die Listen sind ein täglicher Stand. Ein Name kann Minuten nach dem Scan registriert werden. `shortfree check` und das MCP-Tool `check_domains` fragen die Registry live.
 
 <a id="how-it-works"></a>
 ## Funktionsweise
 
-1. **Durchlauf.** Für jedes Label schickt shortfree eine `NS`-Abfrage an die autoritativen Nameserver der TLD. `NXDOMAIN` heißt: Der Name steht nicht in der Zone. Alle Namen mit 1–3 Zeichen auf acht TLDs sind rund 400.000 Abfragen und dauern Minuten.
-2. **Bestätigung.** Nicht in der Zone heißt noch nicht frei: Namen mit Hold-Status, ohne Nameserver oder in Redemption fehlen dort auch. Darum wird jeder Kandidat mit 1–3 Zeichen beim RDAP-Dienst der Registry nachgeschlagen (Verisign, DENIC, Identity Digital, Google Registry). `404` = nicht registriert. `pending delete` oder `redemption period` = läuft bald aus.
-3. **Wiederholung.** [`scan.yml`](.github/workflows/scan.yml) läuft täglich um 03:17 UTC. Es prüft alle Namen mit 1–3 Zeichen und einen von sieben Teilen des 4-Zeichen-Raums, jeder Name mit 4 Zeichen kommt also einmal pro Woche dran. RDAP-Ergebnisse werden spätestens nach 10 Tagen erneuert. Noch nie geprüfte Namen kommen zuerst, dann auslaufende, dann die ältesten Prüfungen.
+1. **Durchlauf.** Für jedes Label schickt shortfree eine `NS`-Abfrage an die autoritativen Nameserver der TLD. `NXDOMAIN` heißt: Der Name steht nicht in der Zone. Alle Namen mit 1–3 Zeichen einer TLD sind rund 50.000 Abfragen und dauern Minuten.
+2. **Bestätigung.** Nicht in der Zone heißt noch nicht frei: Namen mit Hold-Status, ohne Nameserver oder in Redemption fehlen dort auch. Darum wird jeder Kandidat mit 1–3 Zeichen beim RDAP-Dienst der Registry nachgeschlagen (Verisign, PIR, DENIC, Identity Digital, Google Registry, CentralNic und weitere, siehe [docs/tlds.md](docs/tlds.md)). Namen unterhalb der Mindestlänge einer Registry werden übersprungen. `404` = nicht registriert. `pending delete` oder `redemption period` = läuft bald aus.
+3. **Wiederholung.** [`scan.yml`](.github/workflows/scan.yml) läuft täglich um 03:17 UTC, ein Job pro TLD. Es prüft alle Namen mit 1–3 Zeichen und einen von sieben Teilen des 4-Zeichen-Raums, jeder Name mit 4 Zeichen kommt also einmal pro Woche dran. RDAP-Ergebnisse werden spätestens nach 10 Tagen erneuert. Noch nie geprüfte Namen kommen zuerst, dann auslaufende, dann die ältesten Prüfungen.
 
-Jeder RDAP-Host hat ein eigenes Ratenlimit (1,5–6 Anfragen pro Sekunde, siehe [`internal/rdap/rdap.go`](internal/rdap/rdap.go)), damit die Last im Rahmen bleibt. Der Scanner-Zustand liegt im `data`-Release, die Git-Historie enthält nur die kleinen öffentlichen Listen.
+Jeder RDAP-Host hat ein gemeinsames Ratenlimit von wenigen Anfragen pro Sekunde, das sich alle TLDs dieses Hosts und alle parallelen Jobs teilen (siehe [`internal/rdap/rdap.go`](internal/rdap/rdap.go)), damit die Last im Rahmen bleibt. Der Scanner-Zustand liegt im `data`-Release, die Git-Historie enthält nur die kleinen öffentlichen Listen.
 
 <a id="mcp"></a>
 ## MCP-Server
@@ -129,7 +129,7 @@ Jeder RDAP-Host hat ein eigenes Ratenlimit (1,5–6 Anfragen pro Sekunde, siehe 
 
 | Tool | Funktion |
 |---|---|
-| `check_domains` | Live-Prüfung per DNS + RDAP für bis zu 50 Domains, beliebige Länge und TLD (RDAP für die acht TLDs oben) |
+| `check_domains` | Live-Prüfung per DNS + RDAP für bis zu 50 Domains, beliebige Länge und TLD (RDAP für alle gescannten TLDs) |
 | `find_free_domains` | durchsucht den täglichen Stand nach TLD, Länge, Zeichenart, Teilstring oder Anfang |
 | `suggest_domains` | macht aus einem Wort oder Projektnamen kurze Kandidaten und liefert die freien |
 | `domain_stats` | Zahlen pro TLD und Länge |
@@ -211,10 +211,10 @@ Die Registry hat ihn reserviert oder verlangt einen Premium-Preis. RDAP sagt nur
 Der Scan startet jeden Tag um 03:17 UTC. Jede JSON-Datei hat ein Feld `updated` mit der Scan-Zeit. Namen mit 1–3 Zeichen werden täglich geprüft, Namen mit 4 Zeichen einmal pro Woche.
 
 **Warum werden Namen mit 4 Zeichen nicht per RDAP bestätigt?**
-Es gibt 1.774.224 davon pro TLD. Bei den Ratenlimits von shortfree (1,5–6 Anfragen pro Sekunde) würde ein Durchlauf für eine einzige TLD zwischen 3 und 14 Tagen dauern. DNS beantwortet dieselbe Frage für die meisten Namen in Minuten.
+Es gibt 1.774.224 davon pro TLD. Bei den Ratenlimits von shortfree (wenige Anfragen pro Sekunde je Registry, geteilt zwischen ihren TLDs) würde ein Durchlauf für eine einzige TLD Wochen dauern. DNS beantwortet dieselbe Frage für die meisten Namen in Minuten.
 
-**Warum nur diese acht TLDs?**
-Jede TLD braucht einen RDAP-Dienst der Registry, der bei maßvoller Rate zuverlässig antwortet, und jede kostet rund 300.000 DNS-Abfragen am Tag (alle Namen mit 1–3 Zeichen plus ein Siebtel der 4-Zeichen-Namen). Wie man eine hinzufügt, steht in [CONTRIBUTING.md](CONTRIBUTING.md).
+**Warum nur diese TLDs?**
+Jede TLD braucht einen RDAP-Dienst der Registry, der bei maßvoller Rate zuverlässig antwortet, und jede kostet rund 300.000 DNS-Abfragen am Tag (alle Namen mit 1–3 Zeichen plus ein Siebtel der 4-Zeichen-Namen). Die aktuelle Liste mit Registries und Quellen steht in [docs/tlds.md](docs/tlds.md); wie man eine hinzufügt, in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Verkauft shortfree Domains oder trackt es mich?**
 Nein. Es gibt keine Affiliate-Links, keine Konten und keine Analytics. Website und API sind statische Dateien auf GitHub Pages. Der Code steht unter MIT, die Daten unter CC0.

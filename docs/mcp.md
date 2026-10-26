@@ -1,6 +1,6 @@
 # MCP
 
-`shortfree mcp` is an [MCP](https://modelcontextprotocol.io) server. It lets Claude, Cursor, VS Code or any other MCP client check domains live and search every free 1–4 character domain on **.com .net .de .ai .io .dev .app .tools**.
+`shortfree mcp` is an [MCP](https://modelcontextprotocol.io) server. It lets Claude, Cursor, VS Code or any other MCP client check domains live and search every free 1–4 character domain on **.com .net .org .io .ai .dev** and the other TLDs in [tlds.md](tlds.md).
 
 Ask things like:
 
@@ -88,7 +88,7 @@ Live check of up to 50 domains of any length on any TLD. For each domain shortfr
 | `premium_likely` | 1–2 characters outside .com/.net/.de: usually reserved or premium-priced, even though RDAP reports them as unregistered |
 | `expires`, `epp_status` | from RDAP, when the registry returns them |
 
-RDAP is supported for the eight TLDs above; other TLDs get a DNS-only verdict. Each registry is rate-limited, so expect about a second per domain.
+RDAP is supported for every scanned TLD ([tlds.md](tlds.md)); other TLDs get a DNS-only verdict. Names below a registry's minimum length get `not registrable (...)`. Each registry is rate-limited, so expect about a second per domain.
 
 ### `find_free_domains`
 
@@ -96,7 +96,7 @@ Searches the daily snapshot. Parameters (all optional):
 
 | parameter | |
 |---|---|
-| `tld` | `io`, `.io` or `io,dev`; default all eight |
+| `tld` | `io`, `.io` or `io,dev`; default all scanned TLDs |
 | `length` | 1–4; default all, shortest first |
 | `kind` | `letters`, `digits`, `mixed`, `any` |
 | `contains`, `starts_with` | substring filters |

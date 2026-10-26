@@ -52,7 +52,7 @@ type checkResult struct {
 	Domain        string     `json:"domain"`
 	DNS           string     `json:"dns" jsonschema:"zone status at the TLD's authoritative name servers: free (NXDOMAIN), taken (delegated), unknown, or - if not checked"`
 	RDAP          string     `json:"rdap" jsonschema:"registry RDAP status: available (404), registered, dropping (redemption or pending delete), error, or - if the TLD has no RDAP endpoint here"`
-	Verdict       string     `json:"verdict" jsonschema:"FREE, taken, dropping soon, probably free (...), unknown (...) or invalid (...)"`
+	Verdict       string     `json:"verdict" jsonschema:"FREE, taken, dropping soon, probably free (...), not registrable (...), unknown (...) or invalid (...)"`
 	Free          bool       `json:"free" jsonschema:"true only when the registry confirmed the name is not registered (verdict FREE)"`
 	PremiumLikely bool       `json:"premium_likely" jsonschema:"1-2 character name outside .com/.net/.de: often registry-reserved or premium-priced even when RDAP says available"`
 	Expires       *time.Time `json:"expires,omitempty" jsonschema:"expiration date from RDAP, mainly useful for dropping names"`
@@ -128,8 +128,18 @@ func splitDomain(d string) (label, tld string, ok bool) {
 }
 
 // validLabel accepts any LDH label up to 63 characters (IDN "xn--" included).
+// (names.Index cannot be used as a character check here: its base-37 value
+// overflows for labels longer than 12 characters.)
 func validLabel(s string) bool {
-	return s != "" && len(s) <= 63 && names.Index(s) >= 0 && s[0] != '-' && s[len(s)-1] != '-'
+	if s == "" || len(s) > 63 || s[0] == '-' || s[len(s)-1] == '-' {
+		return false
+	}
+	for _, c := range []byte(s) {
+		if strings.IndexByte(names.Alphabet, c) < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // check looks up one domain live: DNS at the TLD's own servers, then RDAP.
@@ -170,6 +180,11 @@ func (c *checker) check(ctx context.Context, raw string) checkResult {
 		r.Verdict = "taken"
 	default:
 		r.Verdict = "unknown (DNS failed, no RDAP for this TLD)"
+	}
+	// Registries answer "not found" for names they would never accept, too.
+	// Registered short names (grandfathered) still show as taken.
+	if n := minLen(tld); len(label) < n && r.Verdict != "taken" && r.Verdict != "dropping soon" {
+		r.Verdict = fmt.Sprintf("not registrable (below the registry's minimum length of %d)", n)
 	}
 	r.Free = r.Verdict == "FREE"
 	return r

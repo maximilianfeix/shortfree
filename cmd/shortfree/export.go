@@ -94,6 +94,9 @@ func cmdExport(args []string) error {
 			ls[fmt.Sprint(n)] = &LenStats{Valid: valid[n]}
 		}
 		for _, label := range st.Labels(tld) {
+			if len(label) < minLen(tld) {
+				continue // the registry does not register names this short
+			}
 			e := st.TLDs[tld][label]
 			s := ls[fmt.Sprint(len(label))]
 			switch statusOf(e) {

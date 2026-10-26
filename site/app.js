@@ -161,6 +161,16 @@ async function search() {
   out.replaceChildren(...kids);
 }
 
+// renderTLDIndex lists the static per-TLD pages (written by "shortfree
+// pages") for every TLD in stats.json; the HTML holds a no-JS fallback.
+function renderTLDIndex() {
+  $("#tld-index").replaceChildren(...state.stats.order.map((tld) => {
+    const li = el("li", {}, el("a", { href: `${tld}/`, textContent: `.${tld}` }));
+    for (const n of [1, 2, 3, 4]) li.append(" ", el("a", { href: `${tld}/${n}-letter/`, textContent: String(n) }));
+    return li;
+  }));
+}
+
 function renderMatrix() {
   const tb = $("#matrix tbody");
   tb.replaceChildren(...state.stats.order.map((tld) => {
@@ -312,6 +322,7 @@ async function main() {
     $("#facts").removeAttribute("aria-busy");
 
     renderMatrix();
+    renderTLDIndex();
     seg("#f-tld", "tld", stats.order.map((t) => [t, `.${t}`]));
     seg("#f-len", "len", [[1, "1"], [2, "2"], [3, "3"], [4, "4"]]);
     seg("#f-kind", "kind", [["all", "all"], ["letters", "abc", "letters only"], ["digits", "123", "digits only"], ["mixed", "a1-", "mixed"]]);

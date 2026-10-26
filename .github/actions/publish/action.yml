@@ -1,0 +1,52 @@
+name: publish
+description: Export public data, update the data release, commit data/ and upload the Pages artifact.
+inputs:
+  message:
+    description: Commit message prefix
+    default: "data: scan"
+runs:
+  using: composite
+  steps:
+    - name: Export
+      shell: bash
+      run: ./shortfree export
+
+    - name: Upload state and full lists to the data release
+      shell: bash
+      run: |
+        mkdir -p release
+        for f in dist/4/*.txt; do t=$(basename "$f" .txt); gzip -9c "$f" > "release/four-$t.txt.gz"; done
+        for f in data/txt/*.txt; do cp "$f" "release/short-$(basename "$f")"; done
+        gh release view data >/dev/null 2>&1 || gh release create data --target "$GITHUB_SHA" --title "Latest data" --notes "Rolling data release, replaced daily." --latest=false
+        gh release upload data state/state.json.gz bitmaps/*.bin release/* --clobber
+        gh release edit data --notes "$(printf 'Rolling data release, replaced daily by the scan workflow.\n\nLast scan: %s\n\n- `short-<tld>.txt`: RDAP-verified free 1–3 character domains\n- `four-<tld>.txt.gz`: 4 character names not in the zone (DNS check)\n- `<tld>.bin`: 4 character bitmap, 1 bit per base-37 index\n- `state.json.gz`: scanner state' "$(date -u '+%Y-%m-%d %H:%M UTC')")"
+
+    - name: Commit public data
+      shell: bash
+      env:
+        MESSAGE: ${{ inputs.message }}
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add data README.md
+        if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+        git commit -m "$MESSAGE $(date -u +%Y-%m-%d)"
+        git pull --rebase origin main
+        git push origin HEAD:main
+
+    - name: Assemble site
+      shell: bash
+      run: |
+        mkdir -p _site/data/4
+        cp -r site/. _site/
+        cp brand/mark.svg brand/favicon.svg _site/
+        cp brand/social-preview.png _site/ 2>/dev/null || true
+        cp data/*.json _site/data/
+        cp -r data/txt _site/data/
+        cp bitmaps/*.bin _site/data/4/
+        touch _site/.nojekyll
+
+    - uses: actions/configure-pages@v6
+    - uses: actions/upload-pages-artifact@v5
+      with:
+        path: _site

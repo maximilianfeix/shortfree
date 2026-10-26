@@ -9,6 +9,7 @@ import (
 	"hash/fnv"
 	"net"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/miekg/dns"
@@ -36,7 +37,16 @@ type Prober struct {
 	udp     *dns.Client
 	tcp     *dns.Client
 	retries int
+	// idle holds connected UDP sockets per server for reuse, so a sweep does
+	// not open and close one socket per query. A socket that saw any error
+	// is closed instead of returned, so a late reply to a timed-out query can
+	// never be read as the answer to a later one.
+	idle map[string]chan *dns.Conn
 }
+
+// idlePerServer bounds the pooled sockets per server; more concurrent
+// queries than this still work, their sockets are just closed afterwards.
+const idlePerServer = 32
 
 // New resolves the TLD's name servers (IPv4 only, GitHub runners have no IPv6)
 // and returns a prober limited to qps queries per second.
@@ -60,6 +70,14 @@ func New(ctx context.Context, tld string, qps int) (*Prober, error) {
 		return nil, fmt.Errorf("no reachable name servers for .%s", tld)
 	}
 	sort.Strings(servers)
+	return newProber(tld, servers, qps), nil
+}
+
+func newProber(tld string, servers []string, qps int) *Prober {
+	idle := map[string]chan *dns.Conn{}
+	for _, s := range servers {
+		idle[s] = make(chan *dns.Conn, idlePerServer)
+	}
 	return &Prober{
 		TLD:     tld,
 		servers: servers,
@@ -67,7 +85,50 @@ func New(ctx context.Context, tld string, qps int) (*Prober, error) {
 		udp:     &dns.Client{Net: "udp", Timeout: 2 * time.Second},
 		tcp:     &dns.Client{Net: "tcp", Timeout: 4 * time.Second},
 		retries: 5,
-	}, nil
+		idle:    idle,
+	}
+}
+
+// Close closes the pooled sockets. The prober stays usable.
+func (p *Prober) Close() {
+	for _, ch := range p.idle {
+		for len(ch) > 0 {
+			(<-ch).Close()
+		}
+	}
+}
+
+// exchange sends m over UDP to server on a pooled socket.
+func (p *Prober) exchange(ctx context.Context, m *dns.Msg, server string) (*dns.Msg, error) {
+	var conn *dns.Conn
+	select {
+	case conn = <-p.idle[server]:
+	default:
+		var err error
+		if conn, err = p.udp.DialContext(ctx, server); err != nil {
+			return nil, err
+		}
+	}
+	r, _, err := p.udp.ExchangeWithConnContext(ctx, m, conn)
+	if err != nil || !sameQuestion(r, m) {
+		conn.Close()
+		if err == nil {
+			err = fmt.Errorf("reply for another question from %s", server)
+		}
+		return nil, err
+	}
+	select {
+	case p.idle[server] <- conn:
+	default:
+		conn.Close()
+	}
+	return r, nil
+}
+
+func sameQuestion(r, m *dns.Msg) bool {
+	return r != nil && len(r.Question) == 1 && len(m.Question) == 1 &&
+		strings.EqualFold(r.Question[0].Name, m.Question[0].Name) &&
+		r.Question[0].Qtype == m.Question[0].Qtype
 }
 
 // Servers returns the server addresses in use.
@@ -89,7 +150,7 @@ func (p *Prober) Check(ctx context.Context, label string) Result {
 			return Unknown
 		}
 		server := p.servers[(start+attempt)%len(p.servers)]
-		r, _, err := p.udp.ExchangeContext(ctx, m, server)
+		r, err := p.exchange(ctx, m, server)
 		if err == nil && r.Truncated {
 			r, _, err = p.tcp.ExchangeContext(ctx, m, server)
 		}

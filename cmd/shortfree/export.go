@@ -184,7 +184,7 @@ func writeFour(path string, bm store.Bitmap, tld string) error {
 // diffChanges compares the previous available.json with the new one and
 // prepends today's freed/taken events to the rolling change log.
 func diffChanges(prevPath, logPath string, cur *Available, keepDays int) ([]Change, error) {
-	var log []Change
+	log := []Change{} // never null: the site iterates over it
 	if b, err := os.ReadFile(logPath); err == nil {
 		if err := json.Unmarshal(b, &log); err != nil {
 			return nil, err

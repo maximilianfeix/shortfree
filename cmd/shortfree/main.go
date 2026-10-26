@@ -4,6 +4,7 @@
 //	shortfree scan                     1-3 chars: DNS sweep + RDAP verification
 //	shortfree scan4                    4 chars: DNS sweep of one daily shard
 //	shortfree export                   write public data files and README tables
+//	shortfree merge <dir>...           combine parallel bootstrap outputs
 package main
 
 import (
@@ -38,6 +39,8 @@ func main() {
 		err = cmdScan4(ctx, os.Args[2:])
 	case "export":
 		err = cmdExport(os.Args[2:])
+	case "merge":
+		err = cmdMerge(os.Args[2:])
 	case "-h", "--help", "help":
 		usage()
 		return
@@ -59,6 +62,7 @@ Usage:
   shortfree scan  [flags]       sweep 1-3 character names and verify via RDAP
   shortfree scan4 [flags]       sweep one shard of 4 character names
   shortfree export [flags]      write data/ files and README tables
+  shortfree merge [flags] <dir>...  combine outputs of parallel bootstrap jobs
 
 Run "shortfree <command> -h" for flags.
 `)

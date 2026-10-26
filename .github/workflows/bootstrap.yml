@@ -1,0 +1,110 @@
+name: bootstrap
+
+# One-off full scan on 15 parallel runners: one job per TLD for 1-3
+# characters (DNS + up to ~5 h of RDAP, each runner with its own IP and rate
+# limits) and one job per 4 character shard. The publish job merges
+# everything into a fresh data release. The daily scan takes over afterwards.
+on:
+  workflow_dispatch:
+    inputs:
+      overwrite:
+        description: "Replace an existing data release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: scan
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OVERWRITE: ${{ inputs.overwrite }}
+    steps:
+      - run: |
+          if gh release view data -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 && [ "$OVERWRITE" != "true" ]; then
+            echo "A data release exists; rerun with overwrite=true to replace it."; exit 1
+          fi
+
+  short:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        tld: [com, net, de, ai, io, dev, app, tools]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go build -o shortfree ./cmd/shortfree
+      - run: ./shortfree scan -tlds "${{ matrix.tld }}" -rdap-time 290m
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: short-${{ matrix.tld }}
+          path: state/
+          retention-days: 3
+
+  four:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go build -o shortfree ./cmd/shortfree
+      - run: ./shortfree scan4 -shard "${{ matrix.shard }}" -qps 400
+      - uses: actions/upload-artifact@v4
+        with:
+          name: four-${{ matrix.shard }}
+          path: bitmaps/
+          retention-days: 3
+
+  publish:
+    needs: [short, four]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go build -o shortfree ./cmd/shortfree
+      - uses: actions/download-artifact@v4
+        with:
+          path: parts
+      - name: Merge job outputs
+        run: |
+          # short-* artifacts hold state.json.gz, four-* hold <tld>.bin;
+          # give them the state/ and bitmaps/ layout merge expects.
+          for d in parts/short-*; do mkdir -p "$d/state" && mv "$d"/*.gz "$d/state/"; done
+          for d in parts/four-*; do mkdir -p "$d/bitmaps" && mv "$d"/*.bin "$d/bitmaps/"; done
+          ./shortfree merge parts/*
+          ls -la state bitmaps
+      - uses: ./.github/actions/publish
+        with:
+          message: "data: bootstrap"
+      - id: deploy
+        uses: actions/deploy-pages@v5

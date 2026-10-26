@@ -70,6 +70,11 @@
       <div><dt>Verified free, 1–3 chars</dt><dd class="num" id="f-total">–</dd></div>
       <div><dt>TLDs</dt><dd class="num" id="f-tlds">–</dd></div>
     </dl>
+    <p class="note warn-text stale" id="stale" role="status" hidden></p>
+    <details class="coverage" id="coverage" hidden>
+      <summary>Scan coverage by TLD</summary>
+      <ul class="coverage-list" id="coverage-list"></ul>
+    </details>
   </section>
 
   <div id="error" class="wrap" hidden>
@@ -105,21 +110,53 @@
   <section class="wrap section" aria-labelledby="browse-h" id="browse">
     <div class="section-head">
       <h2 id="browse-h">Browse</h2>
+      <p class="note">Select a name for price checks and trademark searches.</p>
     </div>
+    <nav class="views" aria-labelledby="views-h">
+      <h3 id="views-h">Starting points</h3>
+      <ul id="views"></ul>
+    </nav>
     <div class="filters">
       <fieldset class="seg" id="f-tld"><legend>TLD</legend></fieldset>
       <fieldset class="seg" id="f-len"><legend>Length</legend></fieldset>
       <fieldset class="seg" id="f-kind"><legend>Characters</legend></fieldset>
+      <fieldset class="seg" id="f-view"><legend>View</legend></fieldset>
+      <fieldset class="seg" id="f-ver"><legend>Evidence</legend></fieldset>
       <div class="field">
         <label for="f-contains">Contains</label>
         <input id="f-contains" type="text" maxlength="4" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. x">
       </div>
     </div>
+    <p class="note view-note" id="view-note"></p>
     <p class="count" id="count" role="status">Loading the list…</p>
+    <button id="retry4" type="button" class="btn" hidden>Try again</button>
     <ul class="list" id="list" aria-labelledby="browse-h"></ul>
     <div class="more">
       <button id="more" type="button" class="btn" hidden>Show more</button>
-      <a id="dl" class="btn btn-quiet" href="#" download>Download this list (.txt)</a>
+      <a id="dl" class="btn btn-quiet" href="#" download>Download .txt</a>
+      <a id="dl-csv" class="btn btn-quiet" href="#" download>Download .csv with status</a>
+    </div>
+  </section>
+
+  <section class="wrap section" aria-labelledby="sl-h" id="shortlist">
+    <div class="section-head">
+      <h2 id="sl-h">Shortlist<span id="sl-count"></span></h2>
+      <p class="note">Kept in this browser only. Nothing is sent anywhere.</p>
+    </div>
+    <div class="panel shared" id="sl-shared" hidden>
+      <h3>Shared with you: <span id="sl-shared-n"></span></h3>
+      <p class="note">Status from the current scan, not from when the list was shared.</p>
+      <ul class="rows" id="sl-shared-list"></ul>
+      <button type="button" class="btn" id="sl-keep">Add all to my shortlist</button>
+    </div>
+    <p class="msg" id="sl-empty">Save names from the search or from a name's details to compare them here. Statuses refresh with every scan.</p>
+    <p class="note warn-text" id="sl-storage" hidden>This browser blocks local storage, so the shortlist lasts only until you leave the page.</p>
+    <ul class="rows" id="sl-list"></ul>
+    <div class="more" id="sl-actions" hidden>
+      <button type="button" class="btn" id="sl-copy">Copy all</button>
+      <button type="button" class="btn" id="sl-share">Copy share link</button>
+      <a class="btn btn-quiet" id="sl-dl" href="#" download="shortfree-shortlist.txt">Download .txt</a>
+      <button type="button" class="btn btn-quiet" id="sl-clear">Clear</button>
     </div>
   </section>
 
@@ -206,6 +243,13 @@
     </nav>
   </div>
 </footer>
+<dialog id="details" class="details" aria-labelledby="d-h">
+  <div class="d-head">
+    <h2 id="d-h" class="domain"></h2>
+    <button type="button" class="btn" id="d-close">Close</button>
+  </div>
+  <div id="d-body"></div>
+</dialog>
 <script src="app.js" defer></script>
 </body>
 </html>

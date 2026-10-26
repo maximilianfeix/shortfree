@@ -108,6 +108,10 @@ type LenCoverage struct {
 	// 4 characters: one entry per shard; scanned_at is omitted for shards
 	// that were never swept.
 	Shards []ShardCoverage `json:"shards,omitempty"`
+	// AssumedSweptAt: the bitmap predates per-shard records; shards whose
+	// scanned_at equals this time are assumed swept then (every run swept
+	// all shards before), not observed.
+	AssumedSweptAt *time.Time `json:"assumed_swept_at,omitempty"`
 	// Missing is true when there is no data for this length at all.
 	Missing bool `json:"missing,omitempty"`
 }
@@ -178,6 +182,10 @@ func tldCoverage(st *store.State, tld string, ls map[string]*LenStats, cov *stor
 			l4.Shards = append(l4.Shards, sc)
 		}
 		partial = partial || l4.Unscanned > 0 || l4.DNSUnknown > 0
+		if cov.LegacyAt != 0 {
+			t := time.Unix(cov.LegacyAt, 0).UTC()
+			l4.AssumedSweptAt = &t
+		}
 		if cov.Held != "" && c.Held == "" {
 			c.Held = "4 characters: " + cov.Held
 		}

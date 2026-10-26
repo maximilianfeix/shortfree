@@ -461,7 +461,14 @@ func cmdScan4(ctx context.Context, args []string) error {
 	shard := fs.Int("shard", -1, "shard to scan (-1 = day of year mod shards)")
 	qps := fs.Int("qps", 400, "DNS queries per second per TLD")
 	workers := fs.Int("workers", 96, "concurrent DNS queries per TLD")
+	statePath := fs.String("state", "state/state.json.gz", "state file whose update time dates bitmaps without coverage file (missing = none)")
 	fs.Parse(args)
+	// Bitmaps from before coverage was recorded were swept completely by
+	// every run: date them by the state they were published with.
+	var legacyAt time.Time
+	if st, err := store.Load(*statePath); err == nil {
+		legacyAt = st.Updated
+	}
 
 	if *shards < 1 {
 		return fmt.Errorf("scan4: -shards must be at least 1")
@@ -488,7 +495,7 @@ func cmdScan4(ctx context.Context, args []string) error {
 				errs <- err
 				return
 			}
-			cov, err := store.LoadCoverage(store.CoveragePath(path), *shards)
+			cov, err := store.BitmapCoverage(path, *shards, legacyAt)
 			if err != nil {
 				errs <- err
 				return

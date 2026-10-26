@@ -53,6 +53,7 @@ A name missing from every list is registered **only if it was covered**. `covera
 | `lengths.<n>.swept`, `dns_unknown`, `unscanned` | labels covered by the last sweep, of those without a DNS answer, and labels never swept |
 | `lengths.<n>.rdap_verified`, `rdap_pending`, `rdap_stale`, `oldest_check`, `median_age_days` | RDAP evidence behind the 1–3 character lists |
 | `lengths.4.shards[]` | per 4 character shard (first character index mod 7): `names`, `scanned_at` (omitted if never swept), `dns_unknown` |
+| `lengths.4.assumed_swept_at` | set while the bitmap predates per-shard records: shards with this `scanned_at` are assumed swept then (older runs swept every shard), not observed. A TLD without any bitmap counts as unscanned |
 
 In `stats.json`, `unscanned` (4 characters) counts names in shards never swept and `missing: true` means there is no data at all for that length: the count is unknown, not zero. TLDs without any data are listed in `missing` and left out of `order`.
 

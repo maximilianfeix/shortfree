@@ -14,6 +14,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/maximilianfeix/shortfree/internal/names"
 )
 
 // Entry is what we know about one name that is not delegated in DNS. Keys are
@@ -230,6 +232,10 @@ type Coverage struct {
 	// Held is set when the latest bitmap was rejected and this older one
 	// kept (see Scan.Held).
 	Held string `json:"held,omitempty"`
+	// LegacyAt is set while some shard records are assumed, not observed:
+	// the bitmap was written before coverage was recorded (see
+	// BitmapCoverage). Those records carry this time.
+	LegacyAt int64 `json:"legacy_at,omitempty"`
 }
 
 // CoveragePath returns the coverage file belonging to a bitmap path.
@@ -260,6 +266,34 @@ func LoadCoverage(path string, shards int) (*Coverage, error) {
 	return c, nil
 }
 
+// BitmapCoverage returns the coverage of the bitmap at bitmapPath. A bitmap
+// without coverage file comes from before coverage was recorded, when every
+// run swept all shards: it counts as fully swept at legacyAt (the state's
+// update time) and is marked with LegacyAt. Without a bitmap, or with a zero
+// legacyAt, a missing coverage file means nothing was swept.
+func BitmapCoverage(bitmapPath string, shards int, legacyAt time.Time) (*Coverage, error) {
+	covPath := CoveragePath(bitmapPath)
+	if _, err := os.Stat(covPath); errors.Is(err, os.ErrNotExist) && !legacyAt.IsZero() {
+		if _, err := os.Stat(bitmapPath); err == nil {
+			return LegacyCoverage(shards, legacyAt), nil
+		}
+	}
+	return LoadCoverage(covPath, shards)
+}
+
+// LegacyCoverage is a coverage with every shard swept at t.
+func LegacyCoverage(shards int, t time.Time) *Coverage {
+	sizes := make([]int, shards)
+	names.Each(4, 0, 1, func(_ int, s string) {
+		sizes[strings.IndexByte(names.Alphabet, s[0])%shards]++
+	})
+	c := &Coverage{Shards: shards, Scans: map[string]*ShardScan{}, LegacyAt: t.Unix()}
+	for i, n := range sizes {
+		c.Scans[fmt.Sprint(i)] = &ShardScan{At: t.Unix(), Names: n}
+	}
+	return c
+}
+
 // Save writes c atomically.
 func (c *Coverage) Save(path string) error {
 	b, err := json.Marshal(c)
@@ -285,6 +319,15 @@ func (c *Coverage) Record(shard, shards int, s *ShardScan) {
 	}
 	c.Scans[fmt.Sprint(shard)] = s
 	c.Held = ""
+	if c.LegacyAt != 0 {
+		assumed := false
+		for _, x := range c.Scans {
+			assumed = assumed || x.At == c.LegacyAt
+		}
+		if !assumed {
+			c.LegacyAt = 0
+		}
+	}
 }
 
 // Complete reports whether every shard has been swept at least once.

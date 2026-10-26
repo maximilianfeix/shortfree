@@ -233,6 +233,7 @@ components:
         oldest_check: { type: string, format: date-time, description: Oldest RDAP check behind a published available/dropping name }
         median_age_days: { type: number }
         shards: { type: array, items: { $ref: "#/components/schemas/ShardCoverage" }, description: 4 characters only }
+        assumed_swept_at: { type: string, format: date-time, description: "4 characters: the bitmap predates per-shard records; shards with this scanned_at are assumed swept at that time (older runs swept all shards)" }
         missing: { type: boolean }
     TLDCoverage:
       type: object

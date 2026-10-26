@@ -191,7 +191,7 @@ func cmdExport(args []string) error {
 		case err != nil:
 			return err
 		default:
-			if cov, err = store.LoadCoverage(store.CoveragePath(bmPath), *shards); err != nil {
+			if cov, err = store.BitmapCoverage(bmPath, *shards, st.Updated); err != nil {
 				return err
 			}
 			ls["4"].Free = bm.Count()

@@ -115,8 +115,10 @@ func loadPart(dir string) (*part, error) {
 		}
 		tld := strings.TrimSuffix(filepath.Base(path), ".bin")
 		p.bitmaps[tld] = store.Bitmap(b)
-		if _, err := os.Stat(store.CoveragePath(path)); err == nil {
-			c, err := store.LoadCoverage(store.CoveragePath(path), 7)
+		// A bitmap without coverage file predates coverage records and
+		// counts as fully swept at the state's update time.
+		if _, err := os.Stat(store.CoveragePath(path)); err == nil || !s.Updated.IsZero() {
+			c, err := store.BitmapCoverage(path, 7, s.Updated)
 			if err != nil {
 				return nil, err
 			}

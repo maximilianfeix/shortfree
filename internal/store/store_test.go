@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/maximilianfeix/shortfree/internal/names"
 )
 
 func TestStateRoundTrip(t *testing.T) {
@@ -85,6 +87,58 @@ func TestCoverage(t *testing.T) {
 	got.Record(0, 5, &ShardScan{At: 9})
 	if got.Complete() || got.Scanned(1) != nil || got.Shards != 5 {
 		t.Fatalf("new shard count must reset coverage: %+v", got)
+	}
+}
+
+// A bitmap published before coverage files existed was swept completely by
+// every run: it counts as fully swept at the state's update time.
+func TestBitmapCoverageLegacy(t *testing.T) {
+	dir := t.TempDir()
+	at := time.Date(2026, 10, 26, 3, 0, 0, 0, time.UTC)
+	bm := filepath.Join(dir, "dev.bin")
+	// No bitmap: nothing swept.
+	if c, err := BitmapCoverage(bm, 7, at); err != nil || c.Complete() || c.LegacyAt != 0 {
+		t.Fatalf("no bitmap: %+v, %v", c, err)
+	}
+	if err := WriteAtomic(bm, NewBitmap(100)); err != nil {
+		t.Fatal(err)
+	}
+	c, err := BitmapCoverage(bm, 7, at)
+	if err != nil || !c.Complete() || c.LegacyAt != at.Unix() || c.Scanned(6).At != at.Unix() {
+		t.Fatalf("legacy bitmap: %+v, %v", c, err)
+	}
+	total := 0
+	for i := 0; i < 7; i++ {
+		total += c.Scanned(i).Names
+	}
+	want := 0
+	names.Each(4, 0, 1, func(int, string) { want++ })
+	if total != want { // every valid 4 character label, once
+		t.Errorf("legacy shard names sum to %d, want %d", total, want)
+	}
+	// Without a time to date it, a legacy bitmap is not assumed swept.
+	if c, _ := BitmapCoverage(bm, 7, time.Time{}); c.Complete() {
+		t.Error("zero legacyAt must not assume coverage")
+	}
+	// A coverage file wins over the assumption.
+	real := &Coverage{Shards: 7, Scans: map[string]*ShardScan{}}
+	real.Record(2, 7, &ShardScan{At: 5})
+	if err := real.Save(CoveragePath(bm)); err != nil {
+		t.Fatal(err)
+	}
+	if c, _ := BitmapCoverage(bm, 7, at); c.Complete() || c.LegacyAt != 0 {
+		t.Errorf("coverage file ignored: %+v", c)
+	}
+	// Re-sweeping every shard ends the assumption.
+	c = LegacyCoverage(7, at)
+	for i := 0; i < 7; i++ {
+		if c.LegacyAt == 0 {
+			t.Fatalf("assumption ended after %d shards", i)
+		}
+		c.Record(i, 7, &ShardScan{At: at.Unix() + 86400})
+	}
+	if c.LegacyAt != 0 {
+		t.Error("assumption kept after every shard was swept")
 	}
 }
 

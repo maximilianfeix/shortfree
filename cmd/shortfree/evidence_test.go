@@ -384,6 +384,56 @@ func TestSnapshot(t *testing.T) {
 	}
 }
 
+// Export and merge treat a bitmap without coverage file (published by code
+// that swept every shard every run) as fully swept at the state's update
+// time; only a TLD without bitmap is unscanned.
+func TestLegacyBitmapCountsAsSwept(t *testing.T) {
+	dir := t.TempDir()
+	updated := time.Date(2026, 10, 26, 3, 0, 0, 0, time.UTC)
+	st := &store.State{Updated: updated, TLDs: map[string]map[string]*store.Entry{"dev": {}, "io": {}}}
+	statePath := filepath.Join(dir, "state.json")
+	if err := st.Save(statePath); err != nil {
+		t.Fatal(err)
+	}
+	bm := store.NewBitmap(names.Space(4))
+	bm.Set(names.Index("abcd"), true)
+	if err := store.WriteAtomic(filepath.Join(dir, "bitmaps", "dev.bin"), bm); err != nil {
+		t.Fatal(err)
+	}
+	err := cmdExport([]string{"-tlds", "dev,io", "-state", statePath, "-bitmaps", filepath.Join(dir, "bitmaps"),
+		"-out", filepath.Join(dir, "data"), "-four-out", "", "-readme", "", "-api-out", ""})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var s Stats
+	b, _ := os.ReadFile(filepath.Join(dir, "data", "stats.json"))
+	mustJSON(t, b, &s)
+	dev, io := s.TLDs["dev"]["4"], s.TLDs["io"]["4"]
+	if dev.Unscanned != 0 || dev.Free != 1 || dev.Missing {
+		t.Errorf("legacy dev 4 = %+v, want fully swept", dev)
+	}
+	if c := s.Coverage["dev"]; c.Status != covComplete || c.Lengths["4"].AssumedSweptAt == nil || !c.Lengths["4"].Shards[3].ScannedAt.Equal(updated) {
+		t.Errorf("dev coverage = %+v", c.Lengths["4"])
+	}
+	if !io.Missing || s.Coverage["io"].Lengths["4"].Unscanned != io.Valid || s.Coverage["io"].Status != covPartial {
+		t.Errorf("io without bitmap = %+v, want unscanned", io)
+	}
+
+	// merge: a legacy base bitmap gets the same coverage, written out.
+	base := filepath.Join(dir, "prev")
+	writePart(t, base, updated, map[string]map[string]*store.Entry{"dev": {}}, map[string][]string{"dev": {"abcd"}})
+	out := filepath.Join(dir, "merged")
+	part := filepath.Join(dir, "io-part")
+	writePart(t, part, updated.AddDate(0, 0, 1), map[string]map[string]*store.Entry{"io": {}}, nil)
+	if err := cmdMerge([]string{"-base", base, "-state", filepath.Join(out, "state.json.gz"), "-bitmaps", filepath.Join(out, "bitmaps"), part}); err != nil {
+		t.Fatal(err)
+	}
+	c, err := store.LoadCoverage(filepath.Join(out, "bitmaps", "dev.cov.json"), 7)
+	if err != nil || !c.Complete() || c.LegacyAt != updated.Unix() {
+		t.Errorf("merged legacy coverage = %+v, %v", c, err)
+	}
+}
+
 func TestFindRejectsNonASCIIFilters(t *testing.T) {
 	s, _ := newTestServer(t)
 	for _, in := range []findInput{{Contains: "ü"}, {StartsWith: "ä1"}, {Contains: "a.b"}} {

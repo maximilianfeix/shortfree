@@ -214,7 +214,8 @@ function prepare(avail, stats) {
     if (a.checked && typeof a.checked === "object" && !Array.isArray(a.checked)) {
       for (const [k, v] of Object.entries(a.checked)) (state.checked[tld] ||= new Map()).set(k, v);
     }
-    state.sets[tld] = { free: new Set(free), unv: new Set(unv), drop: new Set(drops.map((d) => d.name)), drops, lists: [free, unv] };
+    const unk = new Set(normalizeList(a.unknown, tld)); // no DNS answer: not checked
+    state.sets[tld] = { free: new Set(free), unv: new Set(unv), drop: new Set(drops.map((d) => d.name)), unk, drops, lists: [free, unv] };
   }
 }
 // byLen(tld, n) -> [verified, unverified], each a list of {s, i, p} (label,
@@ -247,6 +248,17 @@ function coverageFor(tld, len) {
   if (!c || typeof c !== "object") return null;
   const t = (c.tlds && c.tlds[tld]) || c[tld];
   if (!t || typeof t !== "object") return null;
+  // shortfree's coverage.json: tlds.<tld>.lengths.<n>.{swept, dns_unknown, unscanned}.
+  // Coverage = names with a DNS answer / registrable names (swept + never swept).
+  if (t.lengths && typeof t.lengths === "object") {
+    let done = 0, total = 0;
+    for (const x of len != null ? [t.lengths[len]] : Object.values(t.lengths)) {
+      if (!x || typeof x.swept !== "number") continue;
+      done += x.swept - (x.dns_unknown || 0);
+      total += x.swept + (x.unscanned || 0);
+    }
+    return { pct: total ? Math.max(0, Math.min(1, done / total)) : null, at: t.scanned_at ?? null };
+  }
   const x = len != null && t[len] && typeof t[len] === "object" ? t[len] : t;
   let pct = [x.pct, x.percent, x.coverage, x.ratio].find((v) => typeof v === "number");
   if (pct == null) {
@@ -264,29 +276,40 @@ function coverageFor(tld, len) {
 
 // status of label.tld: free | free4 (DNS-only candidate) | unv (DNS-free, RDAP
 // pending) | drop | taken | unknown
+// A name without a DNS answer, or in a 4 character shard never swept, is
+// "unknown", not "taken".
 async function status(label, tld) {
   if (label.length === 4) {
     const r = await bitmap(tld);
     if (!r.bm) return "unknown";
-    return bit(r.bm, index(label)) ? "free4" : "taken";
+    if (bit(r.bm, index(label))) return "free4";
+    return swept4(label, tld) ? "taken" : "unknown";
   }
   const s = state.sets[tld];
   if (!s) return "unknown";
   if (s.free.has(label)) return "free";
   if (s.drop.has(label)) return "drop";
   if (s.unv.has(label)) return "unv";
+  if (s.unk.has(label)) return "unknown";
   return "taken";
+}
+// swept4 reports whether label's 4 character shard (first character index
+// mod shard count) was ever swept, per coverage.json. No data: assume yes.
+function swept4(label, tld) {
+  const shards = state.cov?.tlds?.[tld]?.lengths?.["4"]?.shards;
+  if (!Array.isArray(shards) || !shards.length) return true;
+  return Boolean(shards[ALPHA.indexOf(label[0]) % shards.length]?.scanned_at);
 }
 const WORD = { free: "free", free4: "likely free", unv: "likely free", drop: "dropping", taken: "taken", unknown: "no data" };
 const STATE = { free: "free", free4: "unverified", unv: "unverified", drop: "dropping", taken: "taken", unknown: "unknown" };
 const ASIDE = { free4: "DNS check only", unv: "RDAP check queued" };
 const EVIDENCE = {
-  free: "Verified: the registry's RDAP service had no record of it at the last scan.",
+  free: "Not registered: the registry's RDAP service had no record of it (checked within 14 days). Reserved or premium names look the same; the registrar has the final word.",
   free4: "Candidate: not in the zone (DNS check only). 4 character names get no RDAP check, so some are registered but not delegated, reserved or premium.",
   unv: "Unverified: not in the zone; the RDAP check is still queued.",
   drop: "Registered, but in redemption or pending delete.",
   taken: "Registered at the last scan.",
-  unknown: "No scan data for this name.",
+  unknown: "Not checked: no scan data, no DNS answer at the last sweep, or its 4 character shard has not been swept yet.",
 };
 const isFree = (st) => st === "free" || st === "free4" || st === "unv";
 const statusTag = (st) => {
@@ -867,7 +890,7 @@ function download(e, csv) {
   objectURL = URL.createObjectURL(new Blob([body], { type: csv ? "text/csv" : "text/plain" }));
   const a = e.currentTarget;
   a.href = objectURL;
-  const parts = [state.len, state.tld, state.kind !== "all" ? state.kind : "", state.view !== "az" ? state.view : "", state.has, len < 4 && state.ver === "all" ? "with-unverified" : ""].filter(Boolean);
+  const parts = [state.len, state.tld, state.kind !== "all" ? state.kind : "", state.view !== "az" ? state.view : "", state.has, len < 4 && state.ver === "all" ? "with-unverified" : len < 4 ? "verified" : "dns-only"].filter(Boolean);
   a.download = `shortfree-${parts.join("-")}.${csv ? "csv" : "txt"}`;
   perf("download", t0);
 }

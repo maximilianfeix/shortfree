@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -17,10 +18,10 @@ func TestVerdict(t *testing.T) {
 		r    rdap.Status
 		want string
 	}{
-		{probe.Free, rdap.Available, "FREE"},
-		{probe.Free, rdap.Dropping, "dropping soon"},
+		{probe.Free, rdap.Available, vNotRegistered},
+		{probe.Free, rdap.Dropping, vDropping},
 		{probe.Free, rdap.Registered, "taken"},
-		{probe.Free, rdap.Error, "probably free"},
+		{probe.Free, rdap.Error, "not in DNS"},
 		{probe.Taken, rdap.Error, "taken"},
 		{probe.Unknown, rdap.Error, "unknown"},
 	}
@@ -34,7 +35,7 @@ func TestVerdict(t *testing.T) {
 func TestFirstExportWritesEmptyChangeList(t *testing.T) {
 	dir := t.TempDir()
 	cur := &Available{Updated: time.Now(), TLDs: map[string]*TLDList{"dev": {Available: []string{"q7"}}}}
-	log, err := diffChanges(filepath.Join(dir, "available.json"), filepath.Join(dir, "changes.json"), cur, 30)
+	log, err := diffChanges(filepath.Join(dir, "available.json"), filepath.Join(dir, "changes.json"), cur, 30, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,15 +51,27 @@ func TestFirstExportWritesEmptyChangeList(t *testing.T) {
 
 func TestDiffChanges(t *testing.T) {
 	dir := t.TempDir()
-	prev := &Available{TLDs: map[string]*TLDList{"dev": {Available: []string{"aa", "bb"}, Unverified: []string{}}}}
+	prevTime := time.Date(2026, 10, 26, 3, 0, 0, 0, time.UTC)
+	prev := &Available{Updated: prevTime, TLDs: map[string]*TLDList{"dev": {
+		Available:  []string{"aa", "bb", "st", "un"},
+		Dropping:   []Dropping{{Name: "dr"}},
+		Unverified: []string{"qq"},
+	}}}
 	if err := writeJSON(filepath.Join(dir, "available.json"), prev); err != nil {
 		t.Fatal(err)
 	}
 	cur := &Available{
-		Updated: time.Date(2026, 10, 27, 3, 0, 0, 0, time.UTC),
-		TLDs:    map[string]*TLDList{"dev": {Available: []string{"bb", "cc"}, Unverified: []string{}}},
+		Updated: prevTime.AddDate(0, 0, 1),
+		TLDs: map[string]*TLDList{"dev": {
+			// cc: RDAP registered -> 404 observed today; qq: queued name,
+			// first RDAP check; dr: was dropping; ee: first seen today.
+			Available:  []string{"bb", "cc", "qq", "dr", "ee"},
+			Unverified: []string{"st"}, // evidence expired: not "taken"
+			Unknown:    []string{"un"}, // no DNS answer: not "taken"
+		}},
 	}
-	log, err := diffChanges(filepath.Join(dir, "available.json"), filepath.Join(dir, "changes.json"), cur, 30)
+	freedSince := func(d string, since time.Time) bool { return d == "cc.dev" && since.Equal(prevTime) }
+	log, err := diffChanges(filepath.Join(dir, "available.json"), filepath.Join(dir, "changes.json"), cur, 30, freedSince)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +79,8 @@ func TestDiffChanges(t *testing.T) {
 	for _, c := range log {
 		got[c.Domain] = c.Event
 	}
-	if got["cc.dev"] != "freed" || got["aa.dev"] != "taken" || len(got) != 2 {
-		t.Fatalf("changes = %+v", log)
+	want := map[string]string{"cc.dev": "freed", "dr.dev": "freed", "qq.dev": "newly_listed", "ee.dev": "newly_listed", "aa.dev": "taken"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("changes = %v, want %v", got, want)
 	}
 }

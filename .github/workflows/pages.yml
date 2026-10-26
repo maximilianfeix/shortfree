@@ -36,9 +36,12 @@ jobs:
       - name: Restore data (read-only)
         run: |
           mkdir -p state bitmaps
-          if out=$(gh release view data 2>&1); then
+          if out=$(gh release view data --json assets -q '.assets[].name' 2>&1); then
             gh release download data -p 'state.json.gz' -D state
             gh release download data -p '*.bin' -D bitmaps
+            if grep -q '\.cov\.json$' <<<"$out"; then
+              gh release download data -p '*.cov.json' -D bitmaps
+            fi
           elif grep -qi "not found" <<<"$out"; then
             echo "no data release yet: deploying the site without data"
           else

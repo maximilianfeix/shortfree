@@ -83,10 +83,14 @@ Live check of up to 50 domains of any length on any TLD. For each domain shortfr
 |---|---|
 | `dns` | `free` (NXDOMAIN at the registry's servers), `taken`, `unknown` |
 | `rdap` | `available` (404), `registered`, `dropping` (redemption / pending delete), `error`, `-` (TLD without RDAP in shortfree) |
-| `verdict` | `FREE`, `taken`, `dropping soon`, `probably free (…)`, `unknown (…)`, `invalid (…)` |
-| `free` | `true` only for `FREE` |
+| `verdict` | `not registered (RDAP 404)`, `taken`, `dropping (redemption or pending delete)`, `not in DNS (…)`, `not registrable (…)`, `unknown (…)`, `invalid (…)` |
+| `registration` | registration evidence: `not_registered` (RDAP 404), `registered`, `dropping`, `not_delegated` (DNS only), `unknown`, `invalid` |
+| `registrable` | `no` or `unconfirmed`. Never `yes`: RDAP cannot see reservations, premium prices or eligibility rules, and shortfree does not ask registrars |
+| `free` | `true` only for `registration: not_registered`. It does not mean the name can be bought |
 | `premium_likely` | 1–2 characters outside .com/.net/.de: usually reserved or premium-priced, even though RDAP reports them as unregistered |
-| `expires`, `epp_status` | from RDAP, when the registry returns them |
+| `expires`, `phase`, `epp_status` | from RDAP, when the registry returns them. `expires` is the expiration date, not a drop date |
+
+Only ASCII names (a–z, 0–9, hyphen) are supported. Internationalized names, `xn--` labels and labels with `--` at positions 3–4 are rejected as `invalid (…)`.
 
 RDAP is supported for every scanned TLD ([tlds.md](tlds.md)); other TLDs get a DNS-only verdict. Names below a registry's minimum length get `not registrable (...)`. Each registry is rate-limited, so expect about a second per domain.
 
@@ -99,16 +103,16 @@ Searches the daily snapshot. Parameters (all optional):
 | `tld` | `io`, `.io` or `io,dev`; default all scanned TLDs |
 | `length` | 1–4; default all, shortest first |
 | `kind` | `letters`, `digits`, `mixed`, `any` |
-| `contains`, `starts_with` | substring filters |
+| `contains`, `starts_with` | substring filters (a–z, 0–9 and hyphen only) |
 | `include_dropping` | also list registered names in redemption / pending delete |
 | `limit` | default 100, max 1000; `total_matches` always has the full count |
 
 Each result has a `status`:
 
-- `rdap_verified`: 1–3 characters, the registry's RDAP said "not registered" at the last scan
-- `unverified`: 1–3 characters, not in DNS, RDAP check still pending
+- `rdap_verified`: 1–3 characters, the registry's RDAP answered "not registered" (404) within the last 14 days. Registrability is not confirmed
+- `unverified`: 1–3 characters, not in DNS, no current RDAP answer (`stale: true` if the last answer is older than 14 days)
 - `dns_only`: 4 characters, not in the zone. Never RDAP-checked, so a name can be registered without name servers.
-- `dropping`: registered, but in redemption or pending delete (with `expires`)
+- `dropping`: registered, but in redemption or pending delete (with `phase` and `expires`, the RDAP expiration date, which is not a drop date)
 
 ### `suggest_domains`
 
@@ -130,7 +134,7 @@ Stop words (the, of, and, …) are dropped, accents transliterated and camelCase
 
 ### `domain_stats`
 
-Counts per TLD and length from the latest scan: `rdap_verified`, `unverified`, `dropping`, `dns_only_4char`, `valid_names` and `free_total`.
+Counts per TLD and length from the latest scan: `rdap_verified`, `unverified` (with `stale`), `dropping`, `dns_only_4char`, `dns_unknown`, `unscanned_4char`, `no_data`, `valid_names` and `free_total`, plus the TLD's `coverage` (`complete`, `partial`, `stale`, `held`) and `scanned_at`. Names without a DNS answer and 4 character shards never swept are not checked; they are not counted as taken.
 
 ## Notes
 

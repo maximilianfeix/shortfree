@@ -101,7 +101,7 @@ curl -s https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main
 
 shortfree
 
-- prüft jedes gültige Label (a–z, 0–9, Bindestrich innen) bis 4 Zeichen: 49.284 Namen pro TLD bis 3 Zeichen und 1.774.224 weitere mit 4 Zeichen;
+- prüft jedes gültige ASCII-Label (a–z, 0–9, Bindestrich innen) bis 4 Zeichen: 49.284 Namen pro TLD bis 3 Zeichen und 1.774.224 weitere mit 4 Zeichen; internationalisierte Namen (IDN, `xn--`) sind nicht abgedeckt;
 - fragt direkt die autoritativen Nameserver der TLD, ohne Resolver-Cache;
 - bestätigt jeden Kandidaten mit 1–3 Zeichen beim RDAP-Dienst der Registry (`404` = nicht registriert);
 - führt registrierte Namen in Redemption oder Pending Delete getrennt auf, mit Ablaufdatum;
@@ -173,12 +173,12 @@ shortfree check q7.tools x4k.app abc.de
 
 ```
 DOMAIN    DNS    RDAP        VERDICT
-q7.tools  free   available   FREE
+q7.tools  free   available   not registered (RDAP 404)
 x4k.app   taken  registered  taken
 abc.de    taken  registered  taken
 ```
 
-`check` funktioniert für Domains jeder Länge und TLD. Bei TLDs ohne RDAP-Unterstützung in shortfree gibt es nur ein DNS-Ergebnis (`probably free`). `-json` gibt ein Objekt pro Domain aus:
+`check` funktioniert für ASCII-Domains jeder Länge und TLD. Bei TLDs ohne RDAP-Unterstützung in shortfree gibt es nur ein DNS-Ergebnis (`not in DNS`). „Nicht registriert" (RDAP `404`) heißt nicht „registrierbar": `registrable` ist `unconfirmed`, weil Reservierungen und Premiumpreise per RDAP nicht sichtbar sind. `-json` gibt ein Objekt pro Domain aus:
 
 ```sh
 shortfree check -json q7.tools | jq '.[0].verdict'

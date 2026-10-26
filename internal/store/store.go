@@ -7,23 +7,42 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/maximilianfeix/shortfree/internal/names"
 )
 
 // Entry is what we know about one name that is not delegated in DNS. Keys are
 // short and times are Unix seconds because the state holds ~200k entries.
 type Entry struct {
-	DNS     string `json:"d"`           // "free" or "unknown"
+	DNS     string `json:"d"`           // "free" or "unknown" (no DNS answer at the last sweep)
 	RDAP    string `json:"r,omitempty"` // rdap.Status, empty until verified
 	Checked int64  `json:"c,omitempty"` // last RDAP check
 	Since   int64  `json:"s,omitempty"` // first seen non-delegated
-	Expires int64  `json:"e,omitempty"` // expiration date from RDAP
+	Expires int64  `json:"e,omitempty"` // RDAP expiration event (not a drop date)
+	Phase   string `json:"l,omitempty"` // dropping only: "redemption" or "pending_delete"
+	// Freed is the time of an observed transition from RDAP registered or
+	// dropping to RDAP 404. Only then is a name reported as "freed".
+	Freed int64 `json:"f,omitempty"`
 }
+
+// Scan records the last complete DNS sweep of one TLD's 1-3 character names.
+type Scan struct {
+	At int64 `json:"at"` // when the sweep finished (Unix seconds)
+	// Held is set when the latest scan output for this TLD was rejected
+	// (e.g. implausible jump in the count of free names) and this older
+	// data was kept instead.
+	Held string `json:"held,omitempty"`
+}
+
+// ScannedAt returns At as a time.
+func (s *Scan) ScannedAt() time.Time { return time.Unix(s.At, 0).UTC() }
 
 // CheckedAt returns Checked as a time.
 func (e *Entry) CheckedAt() time.Time { return time.Unix(e.Checked, 0).UTC() }
@@ -40,6 +59,32 @@ func (e *Entry) ExpiresAt() time.Time {
 type State struct {
 	Updated time.Time                    `json:"updated"`
 	TLDs    map[string]map[string]*Entry `json:"tlds"`
+	// Scans holds the last complete sweep per TLD. A TLD with entries but
+	// no Scans record comes from a state written before scans were
+	// recorded; it counts as scanned at Updated.
+	Scans map[string]*Scan `json:"scans,omitempty"`
+}
+
+// ScanOf returns the sweep record of tld, or nil if tld was never scanned.
+func (s *State) ScanOf(tld string) *Scan {
+	if sc := s.Scans[tld]; sc != nil {
+		return sc
+	}
+	if _, ok := s.TLDs[tld]; ok {
+		return &Scan{At: s.Updated.Unix()} // legacy state
+	}
+	return nil
+}
+
+// SetScan records a complete sweep of tld at t.
+func (s *State) SetScan(tld string, t time.Time) { s.PutScan(tld, &Scan{At: t.Unix()}) }
+
+// PutScan stores the scan record of tld.
+func (s *State) PutScan(tld string, sc *Scan) {
+	if s.Scans == nil {
+		s.Scans = map[string]*Scan{}
+	}
+	s.Scans[tld] = sc
 }
 
 // Load reads path (gzip-compressed if it ends in .gz), returning an empty
@@ -147,14 +192,155 @@ func (b Bitmap) Count() int {
 	return n
 }
 
-// LoadBitmap reads a bitmap of n bits, or returns an empty one if the file is
-// missing or has the wrong size.
-func LoadBitmap(path string, n int) (Bitmap, error) {
+// ReadBitmap reads a bitmap of n bits. A missing file returns an error
+// wrapping os.ErrNotExist; a file of the wrong size is an error, never an
+// empty bitmap (that would turn every name into "taken").
+func ReadBitmap(path string, n int) (Bitmap, error) {
 	b, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) || (err == nil && len(b) != (n+7)/8) {
+	if err != nil {
+		return nil, err
+	}
+	if want := (n + 7) / 8; len(b) != want {
+		return nil, fmt.Errorf("%s: %d bytes, want %d", path, len(b), want)
+	}
+	return Bitmap(b), nil
+}
+
+// LoadBitmap reads a bitmap of n bits, or returns an empty one if the file
+// does not exist yet. A file of the wrong size is an error.
+func LoadBitmap(path string, n int) (Bitmap, error) {
+	b, err := ReadBitmap(path, n)
+	if errors.Is(err, os.ErrNotExist) {
 		return NewBitmap(n), nil
 	}
-	return Bitmap(b), err
+	return b, err
+}
+
+// ShardScan is one DNS sweep of one 4 character shard.
+type ShardScan struct {
+	At      int64 `json:"at"`      // when the sweep finished (Unix seconds)
+	Names   int   `json:"names"`   // names in the shard
+	Unknown int   `json:"unknown"` // names without a DNS answer (bit kept from before)
+}
+
+// Coverage records which shards of a 4 character bitmap have been swept. It
+// is stored next to the bitmap as <tld>.cov.json. A zero bit in a shard that
+// was never swept means "not checked", not "taken".
+type Coverage struct {
+	Shards int                   `json:"shards"`
+	Scans  map[string]*ShardScan `json:"scans"` // key: shard number
+	// Held is set when the latest bitmap was rejected and this older one
+	// kept (see Scan.Held).
+	Held string `json:"held,omitempty"`
+	// LegacyAt is set while some shard records are assumed, not observed:
+	// the bitmap was written before coverage was recorded (see
+	// BitmapCoverage). Those records carry this time.
+	LegacyAt int64 `json:"legacy_at,omitempty"`
+}
+
+// CoveragePath returns the coverage file belonging to a bitmap path.
+func CoveragePath(bitmapPath string) string {
+	return strings.TrimSuffix(bitmapPath, ".bin") + ".cov.json"
+}
+
+// LoadCoverage reads a coverage file. A missing file yields an empty
+// coverage with the given shard count (nothing known to be swept).
+func LoadCoverage(path string, shards int) (*Coverage, error) {
+	c := &Coverage{Shards: shards, Scans: map[string]*ShardScan{}}
+	b, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return c, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(b, c); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	if c.Scans == nil {
+		c.Scans = map[string]*ShardScan{}
+	}
+	if c.Shards < 1 {
+		return nil, fmt.Errorf("%s: shards = %d", path, c.Shards)
+	}
+	return c, nil
+}
+
+// BitmapCoverage returns the coverage of the bitmap at bitmapPath. A bitmap
+// without coverage file comes from before coverage was recorded, when every
+// run swept all shards: it counts as fully swept at legacyAt (the state's
+// update time) and is marked with LegacyAt. Without a bitmap, or with a zero
+// legacyAt, a missing coverage file means nothing was swept.
+func BitmapCoverage(bitmapPath string, shards int, legacyAt time.Time) (*Coverage, error) {
+	covPath := CoveragePath(bitmapPath)
+	if _, err := os.Stat(covPath); errors.Is(err, os.ErrNotExist) && !legacyAt.IsZero() {
+		if _, err := os.Stat(bitmapPath); err == nil {
+			return LegacyCoverage(shards, legacyAt), nil
+		}
+	}
+	return LoadCoverage(covPath, shards)
+}
+
+// LegacyCoverage is a coverage with every shard swept at t.
+func LegacyCoverage(shards int, t time.Time) *Coverage {
+	sizes := make([]int, shards)
+	names.Each(4, 0, 1, func(_ int, s string) {
+		sizes[strings.IndexByte(names.Alphabet, s[0])%shards]++
+	})
+	c := &Coverage{Shards: shards, Scans: map[string]*ShardScan{}, LegacyAt: t.Unix()}
+	for i, n := range sizes {
+		c.Scans[fmt.Sprint(i)] = &ShardScan{At: t.Unix(), Names: n}
+	}
+	return c
+}
+
+// Save writes c atomically.
+func (c *Coverage) Save(path string) error {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	return WriteAtomic(path, append(b, '\n'))
+}
+
+// Scanned returns the sweep of shard, or nil if it was never swept.
+func (c *Coverage) Scanned(shard int) *ShardScan {
+	if c == nil {
+		return nil
+	}
+	return c.Scans[fmt.Sprint(shard)]
+}
+
+// Record notes a sweep of shard. A different shard count than before
+// invalidates every earlier record, because shard numbers no longer match.
+func (c *Coverage) Record(shard, shards int, s *ShardScan) {
+	if c.Shards != shards {
+		c.Shards, c.Scans = shards, map[string]*ShardScan{}
+	}
+	c.Scans[fmt.Sprint(shard)] = s
+	c.Held = ""
+	if c.LegacyAt != 0 {
+		assumed := false
+		for _, x := range c.Scans {
+			assumed = assumed || x.At == c.LegacyAt
+		}
+		if !assumed {
+			c.LegacyAt = 0
+		}
+	}
+}
+
+// Complete reports whether every shard has been swept at least once.
+func (c *Coverage) Complete() bool {
+	if c == nil || c.Shards < 1 {
+		return false
+	}
+	for i := 0; i < c.Shards; i++ {
+		if c.Scanned(i) == nil {
+			return false
+		}
+	}
+	return true
 }
 
 // WriteAtomic writes data to path via a temp file and rename.

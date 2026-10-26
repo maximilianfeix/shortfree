@@ -40,6 +40,8 @@ func free(checked int64) *store.Entry {
 	return &store.Entry{DNS: "free", RDAP: "available", Checked: checked}
 }
 
+var noJump = jumpLimit{}
+
 func entryLabels(m map[string]*store.Entry) []string {
 	var out []string
 	for l := range m {
@@ -81,7 +83,7 @@ func TestMergeOwnedReplacesWholeTLD(t *testing.T) {
 	}, nil)
 	// io's job failed: no part, so base survives.
 
-	st, bms, err := mergeOwned(base, []string{filepath.Join(root, "dev"), filepath.Join(root, "de")})
+	st, bms, _, err := mergeOwned(base, []string{filepath.Join(root, "dev"), filepath.Join(root, "de")}, noJump)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +110,7 @@ func TestMergeOwnedReplacesWholeTLD(t *testing.T) {
 func TestMergeOwnedWithoutBase(t *testing.T) {
 	root := t.TempDir()
 	writePart(t, filepath.Join(root, "xyz"), time.Now(), map[string]map[string]*store.Entry{"xyz": {"q7": free(1)}}, nil)
-	st, bms, err := mergeOwned("", []string{filepath.Join(root, "xyz")})
+	st, bms, _, err := mergeOwned("", []string{filepath.Join(root, "xyz")}, noJump)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +122,7 @@ func TestMergeOwnedWithoutBase(t *testing.T) {
 func TestMergeOwnedMissingBaseIsFirstRun(t *testing.T) {
 	root := t.TempDir()
 	writePart(t, filepath.Join(root, "co"), time.Now(), map[string]map[string]*store.Entry{"co": {"q7": free(1)}}, map[string][]string{"co": {"q7q7"}})
-	st, bms, err := mergeOwned(filepath.Join(root, "empty-prev"), []string{filepath.Join(root, "co")})
+	st, bms, _, err := mergeOwned(filepath.Join(root, "empty-prev"), []string{filepath.Join(root, "co")}, noJump)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,13 +135,13 @@ func TestMergeOwnedRejectsTwoOwners(t *testing.T) {
 	root := t.TempDir()
 	writePart(t, filepath.Join(root, "a"), time.Now(), map[string]map[string]*store.Entry{"dev": {}}, nil)
 	writePart(t, filepath.Join(root, "b"), time.Now(), map[string]map[string]*store.Entry{"dev": {}}, nil)
-	if _, _, err := mergeOwned("", []string{filepath.Join(root, "a"), filepath.Join(root, "b")}); err == nil || !strings.Contains(err.Error(), ".dev state") {
+	if _, _, _, err := mergeOwned("", []string{filepath.Join(root, "a"), filepath.Join(root, "b")}, noJump); err == nil || !strings.Contains(err.Error(), ".dev state") {
 		t.Errorf("err = %v, want duplicate state owner", err)
 	}
 
 	writePart(t, filepath.Join(root, "c"), time.Now(), nil, map[string][]string{"io": {"aaaa"}})
 	writePart(t, filepath.Join(root, "d"), time.Now(), nil, map[string][]string{"io": {"bbbb"}})
-	if _, _, err := mergeOwned("", []string{filepath.Join(root, "c"), filepath.Join(root, "d")}); err == nil || !strings.Contains(err.Error(), ".io bitmap") {
+	if _, _, _, err := mergeOwned("", []string{filepath.Join(root, "c"), filepath.Join(root, "d")}, noJump); err == nil || !strings.Contains(err.Error(), ".io bitmap") {
 		t.Errorf("err = %v, want duplicate bitmap owner", err)
 	}
 }
@@ -151,7 +153,7 @@ func TestMergeRejectsTruncatedBitmap(t *testing.T) {
 	if err := store.WriteAtomic(filepath.Join(dir, "bitmaps", "dev.bin"), []byte{1, 2, 3}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := mergeOwned("", []string{dir}); err == nil {
+	if _, _, _, err := mergeOwned("", []string{dir}, noJump); err == nil {
 		t.Error("truncated bitmap accepted")
 	}
 }
@@ -166,7 +168,7 @@ func TestMergeOrUnionsBootstrapShards(t *testing.T) {
 	}, nil)
 	writePart(t, filepath.Join(root, "four-0"), time.Now(), nil, map[string][]string{"dev": {"aaaa"}})
 	writePart(t, filepath.Join(root, "four-1"), time.Now(), nil, map[string][]string{"dev": {"bbbb"}})
-	st, bms, err := mergeOr([]string{
+	st, bms, _, err := mergeOr([]string{
 		filepath.Join(root, "short-dev"), filepath.Join(root, "short-dev2"),
 		filepath.Join(root, "four-0"), filepath.Join(root, "four-1"),
 	})
@@ -283,8 +285,9 @@ func TestCmdTLDsJSON(t *testing.T) {
 
 func TestExportSkipsNamesBelowMinLen(t *testing.T) {
 	dir := t.TempDir()
-	st := &store.State{Updated: time.Now().UTC(), TLDs: map[string]map[string]*store.Entry{
-		"so": {"ab": free(1), "abc": free(1)},
+	now := time.Now().UTC()
+	st := &store.State{Updated: now, TLDs: map[string]map[string]*store.Entry{
+		"so": {"ab": free(now.Unix()), "abc": free(now.Unix())},
 	}}
 	statePath := filepath.Join(dir, "state.json.gz")
 	if err := st.Save(statePath); err != nil {

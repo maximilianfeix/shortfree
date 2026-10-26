@@ -17,22 +17,17 @@ import (
 // apiBase is where GitHub Pages serves the static API.
 const apiBase = "https://maximilianfeix.github.io/shortfree/api/v1/"
 
-// csvHeader is the column layout of every CSV file in the API.
-var csvHeader = []string{"domain", "tld", "length", "kind", "status", "first_seen", "checked_at"}
+// csvHeader is the column layout of every CSV file in the API. New columns
+// are only ever appended.
+var csvHeader = []string{"domain", "tld", "length", "kind", "status", "first_seen", "checked_at", "verification", "evidence_age_days"}
 
-// statusOf classifies a 1-3 character state entry for the public lists:
-// "available" (RDAP 404), "dropping" (redemption/pending delete),
-// "unverified" (not in DNS, RDAP pending) or "" (not listed).
-func statusOf(e *store.Entry) string {
-	switch {
-	case e.RDAP == string(rdap.Available):
-		return "available"
-	case e.RDAP == string(rdap.Dropping):
-		return "dropping"
-	case (e.RDAP == "" || e.RDAP == string(rdap.Error)) && e.DNS == "free":
-		return "unverified"
-	}
-	return ""
+// statusDefinitions is published in index.json so every status says what
+// it is (and is not) based on.
+var statusDefinitions = map[string]string{
+	"available":  "Not registered: not in DNS and the registry's RDAP service answered 404 within max_evidence_age_days. Not a promise that a registrar sells it: reserved, premium and restricted names also answer 404.",
+	"dropping":   "Registered, in redemption period or pending delete (RDAP). rdap_expiration is the registry's expiration date, not a drop date.",
+	"unverified": "Not in DNS, but no current RDAP answer: check queued, failed, or the last answer is older than max_evidence_age_days (then also listed in stale).",
+	"unknown":    "No DNS answer at the last sweep and no current RDAP answer: not checked. Neither free nor taken.",
 }
 
 // APIEndpoint describes one file of the static API in v1/index.json.
@@ -44,15 +39,18 @@ type APIEndpoint struct {
 
 // APIIndex is v1/index.json.
 type APIIndex struct {
-	Updated   time.Time     `json:"updated"`
-	Version   string        `json:"version"`
-	BaseURL   string        `json:"base_url"`
-	Docs      string        `json:"docs"`
-	OpenAPI   string        `json:"openapi"`
-	License   string        `json:"license"`
-	TLDs      []string      `json:"tlds"`
-	Lengths   []int         `json:"lengths"`
-	Endpoints []APIEndpoint `json:"endpoints"`
+	Updated            time.Time         `json:"updated"`
+	Version            string            `json:"version"`
+	BaseURL            string            `json:"base_url"`
+	Docs               string            `json:"docs"`
+	Accuracy           string            `json:"accuracy"`
+	OpenAPI            string            `json:"openapi"`
+	License            string            `json:"license"`
+	TLDs               []string          `json:"tlds"`
+	Lengths            []int             `json:"lengths"`
+	MaxEvidenceAgeDays float64           `json:"max_evidence_age_days"`
+	Statuses           map[string]string `json:"statuses"`
+	Endpoints          []APIEndpoint     `json:"endpoints"`
 }
 
 // APIList is v1/<tld>.json (Length 0) and v1/<tld>/<n>.json.
@@ -60,15 +58,24 @@ type APIList struct {
 	Updated time.Time `json:"updated"`
 	TLD     string    `json:"tld"`
 	Length  int       `json:"length,omitempty"`
+	// MaxEvidenceAgeDays: every name in available and dropping was checked
+	// via RDAP at most this many days before updated.
+	MaxEvidenceAgeDays float64 `json:"max_evidence_age_days"`
+	// OldestCheck is the oldest RDAP check behind a name in available.
+	OldestCheck *time.Time `json:"oldest_check,omitempty"`
 	TLDList
 }
 
 // APIDropping is one entry of v1/dropping.json.
 type APIDropping struct {
-	Domain  string    `json:"domain"`
-	TLD     string    `json:"tld"`
-	Length  int       `json:"length"`
-	Expires time.Time `json:"expires,omitzero"`
+	Domain string `json:"domain"`
+	TLD    string `json:"tld"`
+	Length int    `json:"length"`
+	// Expires is the deprecated name of RDAPExpiration.
+	Expires        time.Time `json:"expires,omitzero"`
+	RDAPExpiration time.Time `json:"rdap_expiration,omitzero"` // not a drop date
+	Phase          string    `json:"phase,omitempty"`          // redemption or pending_delete
+	CheckedAt      time.Time `json:"checked_at,omitzero"`
 }
 
 // APIDroppingList is v1/dropping.json.
@@ -102,35 +109,44 @@ type APIChanges struct {
 func apiEndpoints() []APIEndpoint {
 	return []APIEndpoint{
 		{"index.json", "json", "This index: update time, TLDs and endpoint list."},
-		{"stats.json", "json", "Counts per TLD and label length (available, dropping, unverified, 4 char free, valid)."},
-		{"changes.json", "json", "Domains freed or taken during the last days, newest first."},
-		{"dropping.json", "json", "Registered 1-3 character domains in redemption or pending delete on all TLDs, with expiry, soonest first."},
-		{"{tld}.json", "json", "1-3 character names on one TLD: available (RDAP-verified), dropping (with expiry), unverified (not in DNS, RDAP pending)."},
+		{"stats.json", "json", "Counts per TLD and label length (available, dropping, unverified, stale, unknown, 4 char free, unscanned, valid) plus coverage."},
+		{"coverage.json", "json", "What the counts are based on: last sweep per TLD, DNS unknowns, unscanned 4 character shards, RDAP evidence age, held or missing TLDs."},
+		{"changes.json", "json", "Domains freed (RDAP registered/dropping -> 404), newly listed or taken during the last days, newest first."},
+		{"dropping.json", "json", "Registered 1-3 character domains in redemption or pending delete on all TLDs: pending delete first, with lifecycle phase and RDAP expiration date (not a drop date)."},
+		{"{tld}.json", "json", "1-3 character names on one TLD: available (RDAP 404, not registered), dropping, unverified (not in DNS, no current RDAP answer), stale (part of unverified), unknown (no DNS answer)."},
 		{"{tld}/{n}.json", "json", "Same as {tld}.json, limited to labels of length n (1, 2 or 3)."},
-		{"free.csv", "csv", "All RDAP-verified free 1-3 character domains on all TLDs."},
-		{"{tld}.csv", "csv", "All listed 1-3 character names on one TLD with status available, dropping or unverified."},
-		{"badge.json", "json", "shields.io endpoint badge with the number of RDAP-verified free 1-3 character domains."},
+		{"free.csv", "csv", "All 1-3 character domains with current RDAP evidence of not being registered, on all TLDs."},
+		{"{tld}.csv", "csv", "All listed 1-3 character names on one TLD with status, verification and evidence age."},
+		{"badge.json", "json", "shields.io endpoint badge with the number of RDAP-verified (not registered) 1-3 character domains."},
 	}
 }
 
 // writeAPI writes the versioned static API (JSON + CSV) below dir/v1.
-func writeAPI(dir string, st *store.State, order []string, avail *Available, stats *Stats, changes []Change, keepDays int) error {
+func writeAPI(dir string, st *store.State, order []string, avail *Available, stats *Stats, report *CoverageReport, changes []Change, keepDays int, maxAge time.Duration) error {
 	v1 := filepath.Join(dir, "v1")
+	now := avail.Updated
+	ageLimit := maxAge.Hours() / 24
 	idx := APIIndex{
-		Updated:   avail.Updated,
-		Version:   "v1",
-		BaseURL:   apiBase,
-		Docs:      "https://github.com/maximilianfeix/shortfree/blob/main/docs/api.md",
-		OpenAPI:   "https://maximilianfeix.github.io/shortfree/api/openapi.yaml",
-		License:   "CC0-1.0",
-		TLDs:      order,
-		Lengths:   []int{1, 2, 3},
-		Endpoints: apiEndpoints(),
+		Updated:            avail.Updated,
+		Version:            "v1",
+		BaseURL:            apiBase,
+		Docs:               "https://github.com/maximilianfeix/shortfree/blob/main/docs/api.md",
+		Accuracy:           "https://github.com/maximilianfeix/shortfree/blob/main/docs/accuracy.md",
+		OpenAPI:            "https://maximilianfeix.github.io/shortfree/api/openapi.yaml",
+		License:            "CC0-1.0",
+		TLDs:               order,
+		Lengths:            []int{1, 2, 3},
+		MaxEvidenceAgeDays: ageLimit,
+		Statuses:           statusDefinitions,
+		Endpoints:          apiEndpoints(),
 	}
 	if err := writeCompact(filepath.Join(v1, "index.json"), idx); err != nil {
 		return err
 	}
 	if err := writeCompact(filepath.Join(v1, "stats.json"), stats); err != nil {
+		return err
+	}
+	if err := writeCompact(filepath.Join(v1, "coverage.json"), report); err != nil {
 		return err
 	}
 	if err := writeCompact(filepath.Join(v1, "changes.json"), APIChanges{avail.Updated, keepDays, changes}); err != nil {
@@ -145,25 +161,29 @@ func writeAPI(dir string, st *store.State, order []string, avail *Available, sta
 			continue
 		}
 		for _, d := range list.Dropping {
-			drop.Domains = append(drop.Domains, APIDropping{d.Name + "." + tld, tld, len(d.Name), d.Expires})
+			drop.Domains = append(drop.Domains, APIDropping{d.Name + "." + tld, tld, len(d.Name), d.RDAPExpiration, d.RDAPExpiration, d.Phase, d.CheckedAt})
 		}
-		if err := writeCompact(filepath.Join(v1, tld+".json"), APIList{avail.Updated, tld, 0, *list}); err != nil {
+		if err := writeCompact(filepath.Join(v1, tld+".json"), APIList{avail.Updated, tld, 0, ageLimit, oldestCheck(st, tld, list.Available), *list}); err != nil {
 			return err
 		}
 		for n := 1; n <= 3; n++ {
-			if err := writeCompact(filepath.Join(v1, tld, fmt.Sprintf("%d.json", n)), APIList{avail.Updated, tld, n, byLength(list, n)}); err != nil {
+			l := byLength(list, n)
+			if err := writeCompact(filepath.Join(v1, tld, fmt.Sprintf("%d.json", n)), APIList{avail.Updated, tld, n, ageLimit, oldestCheck(st, tld, l.Available), l}); err != nil {
 				return err
 			}
 		}
 
 		var rows [][]string
 		for _, label := range st.Labels(tld) {
+			if len(label) < minLen(tld) {
+				continue
+			}
 			e := st.TLDs[tld][label]
-			status := statusOf(e)
+			status := statusOf(e, now, maxAge)
 			if status == "" {
 				continue
 			}
-			row := csvRow(label, tld, status, e)
+			row := csvRow(label, tld, status, e, now, maxAge)
 			rows = append(rows, row)
 			if status == "available" {
 				free = append(free, row)
@@ -173,15 +193,26 @@ func writeAPI(dir string, st *store.State, order []string, avail *Available, sta
 			return err
 		}
 	}
+	// Pending delete is the last phase before deletion; the expiration date
+	// says nothing about when a name drops, so it does not decide the order.
+	phaseRank := func(p string) int {
+		switch p {
+		case rdap.PhasePendingDelete:
+			return 0
+		case rdap.PhaseRedemption:
+			return 1
+		}
+		return 2
+	}
 	sort.SliceStable(drop.Domains, func(i, j int) bool {
-		a, b := drop.Domains[i].Expires, drop.Domains[j].Expires
-		if a.IsZero() != b.IsZero() {
-			return b.IsZero() // unknown expiry last
+		a, b := drop.Domains[i], drop.Domains[j]
+		if phaseRank(a.Phase) != phaseRank(b.Phase) {
+			return phaseRank(a.Phase) < phaseRank(b.Phase)
 		}
-		if !a.Equal(b) {
-			return a.Before(b)
+		if len(a.Domain) != len(b.Domain) {
+			return len(a.Domain) < len(b.Domain)
 		}
-		return drop.Domains[i].Domain < drop.Domains[j].Domain
+		return a.Domain < b.Domain
 	})
 	drop.Count = len(drop.Domains)
 	if err := writeCompact(filepath.Join(v1, "dropping.json"), drop); err != nil {
@@ -195,26 +226,45 @@ func writeAPI(dir string, st *store.State, order []string, avail *Available, sta
 
 // byLength returns the part of l with labels of length n; slices are never nil.
 func byLength(l *TLDList, n int) TLDList {
-	out := TLDList{Available: []string{}, Dropping: []Dropping{}, Unverified: []string{}}
-	for _, s := range l.Available {
-		if len(s) == n {
-			out.Available = append(out.Available, s)
+	out := *newTLDList()
+	pick := func(src []string, dst *[]string) {
+		for _, s := range src {
+			if len(s) == n {
+				*dst = append(*dst, s)
+			}
 		}
 	}
+	pick(l.Available, &out.Available)
+	pick(l.Unverified, &out.Unverified)
+	pick(l.Stale, &out.Stale)
+	pick(l.Unknown, &out.Unknown)
 	for _, d := range l.Dropping {
 		if len(d.Name) == n {
 			out.Dropping = append(out.Dropping, d)
 		}
 	}
-	for _, s := range l.Unverified {
-		if len(s) == n {
-			out.Unverified = append(out.Unverified, s)
+	for k, v := range l.Checked {
+		if len(k) == n {
+			out.Checked[k] = v
 		}
 	}
 	return out
 }
 
-func csvRow(label, tld, status string, e *store.Entry) []string {
+// oldestCheck returns the oldest RDAP check among labels of tld, nil if none.
+func oldestCheck(st *store.State, tld string, labels []string) *time.Time {
+	var oldest *time.Time
+	for _, l := range labels {
+		if e := st.TLDs[tld][l]; e != nil && e.Checked != 0 {
+			if t := e.CheckedAt(); oldest == nil || t.Before(*oldest) {
+				oldest = &t
+			}
+		}
+	}
+	return oldest
+}
+
+func csvRow(label, tld, status string, e *store.Entry, now time.Time, maxAge time.Duration) []string {
 	day := func(sec int64) string {
 		if sec == 0 {
 			return ""
@@ -225,7 +275,11 @@ func csvRow(label, tld, status string, e *store.Entry) []string {
 	if e.Checked != 0 {
 		checked = e.CheckedAt().Format(time.RFC3339)
 	}
-	return []string{label + "." + tld, tld, fmt.Sprint(len(label)), names.Kind(label), status, day(e.Since), checked}
+	age := ""
+	if d := ageDays(e, now); d >= 0 {
+		age = fmt.Sprint(d)
+	}
+	return []string{label + "." + tld, tld, fmt.Sprint(len(label)), names.Kind(label), status, day(e.Since), checked, verificationOf(e, now, maxAge), age}
 }
 
 func writeCSV(path string, rows [][]string) error {

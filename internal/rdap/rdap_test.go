@@ -56,6 +56,68 @@ func TestLookup(t *testing.T) {
 	if _, err := c.Lookup(context.Background(), "x", "unknown-tld"); err == nil {
 		t.Error("want error for TLD without endpoint")
 	}
+	if info, _ := c.Lookup(context.Background(), "drop", "test"); info.Phase != PhasePendingDelete {
+		t.Errorf("drop: phase %q, want pending_delete", info.Phase)
+	}
+	if info, _ := c.Lookup(context.Background(), "redemption", "test"); info.Phase != PhaseRedemption {
+		t.Errorf("redemption: phase %q, want redemption", info.Phase)
+	}
+}
+
+// Failure modes of broken or misconfigured endpoints: none of them may turn
+// into "available" (or silently into "registered").
+func TestLookupRejectsBadResponses(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		name := r.URL.Path[strings.LastIndexByte(r.URL.Path, '/')+1:]
+		switch name {
+		case "html404.test": // moved endpoint: the web server's own 404 page
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("<html><body>Not Found</body></html>"))
+		case "html200.test": // CDN interstitial or landing page
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte("<html>please wait</html>"))
+		case "garbage.test":
+			w.Header().Set("Content-Type", "application/rdap+json")
+			w.Write([]byte("{not json"))
+		case "entity.test":
+			w.Header().Set("Content-Type", "application/rdap+json")
+			w.Write([]byte(`{"objectClassName":"entity","handle":"X"}`))
+		case "other.test":
+			w.Header().Set("Content-Type", "application/rdap+json")
+			w.Write([]byte(`{"objectClassName":"domain","ldhName":"something-else.test","status":["active"]}`))
+		case "ok.test":
+			w.Header().Set("Content-Type", "application/rdap+json")
+			w.Write([]byte(`{"objectClassName":"domain","ldhName":"OK.TEST.","status":["active"]}`))
+		case "json404.test":
+			w.Header().Set("Content-Type", "application/rdap+json")
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"errorCode":404,"title":"Not Found"}`))
+		case "empty404.test":
+			w.WriteHeader(http.StatusNotFound)
+		case "forbidden.test":
+			w.WriteHeader(http.StatusForbidden)
+		}
+	}))
+	defer srv.Close()
+	Endpoints["test"] = srv.URL + "/"
+	defer delete(Endpoints, "test")
+	c := New(1000, "test")
+	for label, want := range map[string]Status{
+		"html404": Error, "html200": Error, "garbage": Error, "entity": Error, "other": Error, "forbidden": Error,
+		"ok": Registered, "json404": Available, "empty404": Available,
+	} {
+		info, err := c.Lookup(context.Background(), label, "test")
+		if info.Status != want {
+			t.Errorf("%s: status %s (err %v), want %s", label, info.Status, err, want)
+		}
+		if (want == Error) != (err != nil) {
+			t.Errorf("%s: err = %v", label, err)
+		}
+		if label != "forbidden" && want == Error && !errors.Is(err, ErrBadResponse) {
+			t.Errorf("%s: err %v, want ErrBadResponse", label, err)
+		}
+	}
 }
 
 func TestRate(t *testing.T) {

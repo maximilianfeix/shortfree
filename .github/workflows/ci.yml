@@ -28,3 +28,37 @@ jobs:
           grep -q "zqxv93kq7plm.tools.*FREE" out.txt
       - name: Front end syntax
         run: node --check site/app.js
+
+  # Runs action.yml from this checkout against the live registries.
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: name
+        name: Random name nobody has registered
+        run: echo "free=sf-ci-$(openssl rand -hex 8).tools" >> "$GITHUB_OUTPUT"
+      - id: watch
+        uses: ./
+        with:
+          domains: |
+            google.com
+            ${{ steps.name.outputs.free }}
+      - name: Outputs are as expected
+        env:
+          FREE: ${{ steps.watch.outputs.free }}
+          TAKEN: ${{ steps.watch.outputs.taken }}
+          RESULTS: ${{ steps.watch.outputs.results }}
+          NAME: ${{ steps.name.outputs.free }}
+        run: |
+          echo "free=$FREE taken=$TAKEN"
+          jq -e --arg n "$NAME" '. == [$n]' <<< "$FREE"
+          jq -e '. == ["google.com"]' <<< "$TAKEN"
+          jq -e --arg n "$NAME" 'length == 2 and .[0].verdict == "taken" and .[1].domain == $n and .[1].verdict == "FREE"' <<< "$RESULTS"
+      - id: fail
+        uses: ./
+        continue-on-error: true
+        with:
+          domains: ${{ steps.name.outputs.free }}
+          fail-when: free
+      - name: fail-when free fails the step
+        run: test "${{ steps.fail.outcome }}" = failure

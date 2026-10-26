@@ -2,14 +2,49 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
 	"strings"
 	"sync"
+	"text/tabwriter"
 	"time"
 
 	"github.com/maximilianfeix/shortfree/internal/names"
 	"github.com/maximilianfeix/shortfree/internal/probe"
 	"github.com/maximilianfeix/shortfree/internal/rdap"
 )
+
+func cmdCheck(ctx context.Context, args []string) error {
+	fs := newFlags("check")
+	asJSON := fs.Bool("json", false, "print the results as a JSON array")
+	fs.Parse(args)
+	if fs.NArg() == 0 {
+		return fmt.Errorf("usage: shortfree check [-json] <domain>...")
+	}
+	return writeCheck(os.Stdout, newChecker().checkAll(ctx, fs.Args()), *asJSON)
+}
+
+// writeCheck prints check results as a table or, with asJSON, as a JSON
+// array in input order (the fields of checkResult).
+func writeCheck(w io.Writer, results []checkResult, asJSON bool) error {
+	if asJSON {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		return enc.Encode(results)
+	}
+	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(tw, "DOMAIN\tDNS\tRDAP\tVERDICT")
+	for _, r := range results {
+		verdict := r.Verdict
+		if r.DNS == "-" && r.Error != "" {
+			verdict = r.Error
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", r.Domain, r.DNS, r.RDAP, verdict)
+	}
+	return tw.Flush()
+}
 
 // checkResult is the live status of one domain, shared by "shortfree check"
 // and the check_domains MCP tool.

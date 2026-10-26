@@ -78,6 +78,20 @@ type APIDroppingList struct {
 	Domains []APIDropping `json:"domains"`
 }
 
+// APIBadge is v1/badge.json in the shields.io endpoint format
+// (https://shields.io/badges/endpoint-badge).
+type APIBadge struct {
+	SchemaVersion int    `json:"schemaVersion"`
+	Label         string `json:"label"`
+	Message       string `json:"message"`
+	Color         string `json:"color"`
+}
+
+// badgeOf returns the README badge for n RDAP-verified free domains.
+func badgeOf(n int) APIBadge {
+	return APIBadge{SchemaVersion: 1, Label: "free short domains", Message: num(n) + " verified", Color: "1FC16B"}
+}
+
 // APIChanges is v1/changes.json.
 type APIChanges struct {
 	Updated time.Time `json:"updated"`
@@ -95,6 +109,7 @@ func apiEndpoints() []APIEndpoint {
 		{"{tld}/{n}.json", "json", "Same as {tld}.json, limited to labels of length n (1, 2 or 3)."},
 		{"free.csv", "csv", "All RDAP-verified free 1-3 character domains on all TLDs."},
 		{"{tld}.csv", "csv", "All listed 1-3 character names on one TLD with status available, dropping or unverified."},
+		{"badge.json", "json", "shields.io endpoint badge with the number of RDAP-verified free 1-3 character domains."},
 	}
 }
 
@@ -170,6 +185,9 @@ func writeAPI(dir string, st *store.State, order []string, avail *Available, sta
 	})
 	drop.Count = len(drop.Domains)
 	if err := writeCompact(filepath.Join(v1, "dropping.json"), drop); err != nil {
+		return err
+	}
+	if err := writeCompact(filepath.Join(v1, "badge.json"), badgeOf(len(free))); err != nil {
 		return err
 	}
 	return writeCSV(filepath.Join(v1, "free.csv"), free)

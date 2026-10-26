@@ -124,6 +124,12 @@ func TestExportAPIJSON(t *testing.T) {
 				t.Errorf("empty lists must be [] not null: %s", b)
 			}
 		}},
+		{"badge.json", func(t *testing.T, b []byte) {
+			want := `{"schemaVersion":1,"label":"free short domains","message":"3 verified","color":"1FC16B"}` + "\n"
+			if string(b) != want {
+				t.Errorf("badge.json = %s, want %s", b, want)
+			}
+		}},
 		{"io/3.json", func(t *testing.T, b []byte) {
 			var l APIList
 			mustJSON(t, b, &l)
@@ -143,6 +149,15 @@ func TestExportAPIJSON(t *testing.T) {
 			}
 			c.check(t, b)
 		})
+	}
+}
+
+func TestBadgeOf(t *testing.T) {
+	if got := badgeOf(12345).Message; got != "12,345 verified" {
+		t.Errorf("badgeOf(12345).Message = %q", got)
+	}
+	if got := badgeOf(0).Message; got != "0 verified" {
+		t.Errorf("badgeOf(0).Message = %q", got)
 	}
 }
 

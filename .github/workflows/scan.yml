@@ -1,0 +1,108 @@
+name: scan
+
+# Daily sweep. State (RDAP cache, 4 character bitmaps) lives in the assets of
+# the "data" release so the git history only carries the small public lists.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      shard:
+        description: "4 character shard to scan (0-6, empty = today's)"
+        required: false
+      rdap_time:
+        description: "RDAP time budget per registry"
+        required: false
+        default: "40m"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build -o shortfree ./cmd/shortfree
+
+      - name: Restore state from the data release
+        run: |
+          mkdir -p state bitmaps
+          gh release download data -p 'state.json.gz' -D state || echo "no state yet"
+          gh release download data -p '*.bin' -D bitmaps || echo "no bitmaps yet"
+          ls -la state bitmaps
+
+      - name: Sweep 4 character shard
+        env:
+          SHARD: ${{ inputs.shard }}
+        run: |
+          case "$SHARD" in
+            "") ./shortfree scan4 ;;
+            [0-6]) ./shortfree scan4 -shard "$SHARD" ;;
+            *) echo "invalid shard: $SHARD"; exit 1 ;;
+          esac
+
+      - name: Sweep 1-3 characters and verify via RDAP
+        env:
+          RDAP_TIME: ${{ inputs.rdap_time || '40m' }}
+        run: |
+          [[ "$RDAP_TIME" =~ ^[0-9]+[hm]$ ]] || { echo "invalid rdap_time: $RDAP_TIME"; exit 1; }
+          ./shortfree scan -rdap-time "$RDAP_TIME"
+
+      - name: Export
+        run: ./shortfree export
+
+      - name: Upload state and full lists to the data release
+        run: |
+          mkdir -p release
+          for f in dist/4/*.txt; do t=$(basename "$f" .txt); gzip -9c "$f" > "release/four-$t.txt.gz"; done
+          for f in data/txt/*.txt; do cp "$f" "release/short-$(basename "$f")"; done
+          gh release view data >/dev/null 2>&1 || gh release create data --target "$GITHUB_SHA" --title "Latest data" --notes "Rolling data release, replaced daily." --latest=false
+          gh release upload data state/state.json.gz bitmaps/*.bin release/* --clobber
+          gh release edit data --notes "$(printf 'Rolling data release, replaced daily by the scan workflow.\n\nLast scan: %s\n\n- `short-<tld>.txt`: RDAP-verified free 1–3 character domains\n- `four-<tld>.txt.gz`: 4 character names not in the zone (DNS check)\n- `<tld>.bin`: 4 character bitmap, 1 bit per base-37 index\n- `state.json.gz`: scanner state' "$(date -u '+%Y-%m-%d %H:%M UTC')")"
+
+      - name: Commit public data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data README.md
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "data: scan $(date -u +%Y-%m-%d)"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/data/4
+          cp -r site/. _site/
+          cp brand/mark.svg brand/favicon.svg _site/
+          cp brand/social-preview.png _site/ 2>/dev/null || true
+          cp data/*.json _site/data/
+          cp -r data/txt _site/data/
+          cp bitmaps/*.bin _site/data/4/
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

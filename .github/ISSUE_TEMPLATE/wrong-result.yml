@@ -1,0 +1,26 @@
+name: Wrong result
+description: A domain is listed as free but is taken (or the other way round)
+labels: [data]
+body:
+  - type: input
+    id: domain
+    attributes:
+      label: Domain
+      placeholder: q7.tools
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong?
+      options:
+        - Listed as free, but it is registered
+        - Listed as free, but the registry reserves it / sells it as premium
+        - Free, but not listed
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Output of `shortfree check <domain>`, a registrar screenshot, or similar.

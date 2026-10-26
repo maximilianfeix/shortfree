@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">shortfree — Free 1–4 character domains. Rescanned daily.</title>
+  <desc id="desc">The shortfree dot-and-cursor mark and wordmark on a light background.</desc>
+  <rect width="1200" height="300" fill="#F7F9FD"/>
+  <g transform="translate(64 70) scale(.3125)">
+    <rect width="512" height="512" rx="96" fill="#315BEE"/>
+    <path d="M128 288h80v80h-80zM256 112h128v288H256v-48h80V160h-80z" fill="#FFFFFF"/>
+  </g>
+  <text x="264" y="148" fill="#14213A" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="76" font-weight="700" letter-spacing="-4">shortfree</text>
+  <text x="267" y="198" fill="#526079" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="27">Free 1–4 character domains. Rescanned daily.</text>
+</svg>

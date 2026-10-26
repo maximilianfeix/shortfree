@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-labelledby="title">
+  <title id="title">shortfree</title>
+  <rect width="32" height="32" rx="6" fill="#315BEE"/>
+  <path d="M8 18h5v5H8zM16 7h8v18h-8v-3h5V10h-5z" fill="#FFFFFF"/>
+</svg>

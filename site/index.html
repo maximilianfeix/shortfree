@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>shortfree – free 1–4 character domains, rescanned daily</title>
+<meta name="description" content="Every unregistered 1–4 character domain on .com .net .de .ai .io .dev .app .tools. Verified via registry DNS and RDAP, rescanned daily by GitHub Actions.">
+<meta name="theme-color" content="#0C1426">
+<meta property="og:title" content="shortfree – free 1–4 character domains">
+<meta property="og:description" content="Every unregistered short domain on 8 TLDs, rescanned daily. Open source.">
+<meta property="og:image" content="https://maximilianfeix.github.io/shortfree/social-preview.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./" aria-label="shortfree home">
+    <img src="mark.svg" alt="" width="32" height="32">
+    <span>shortfree</span>
+  </a>
+  <p class="scan" id="scan">loading scan…</p>
+  <a class="gh" href="https://github.com/maximilianfeix/shortfree">GitHub ↗</a>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Free short domains.<br><span>Rescanned every day.</span></h1>
+    <p class="lede">Every unregistered 1–4 character name on eight TLDs, checked against the registries' own name servers and RDAP. No registrar, no tracking, no upsell.</p>
+
+    <label class="search" for="q">
+      <span class="prompt" aria-hidden="true">$ check</span>
+      <input id="q" type="text" inputmode="url" autocomplete="off" spellcheck="false" maxlength="4" placeholder="q7x" aria-describedby="qhint">
+    </label>
+    <p id="qhint" class="hint">Type 1–4 characters (a–z, 0–9, -) to see the status on every TLD.</p>
+    <ol id="chips" class="chips" aria-live="polite"></ol>
+  </section>
+
+  <section aria-labelledby="matrix-h">
+    <h2 id="matrix-h">Free names by TLD and length</h2>
+    <div class="matrix-wrap">
+      <table class="matrix" id="matrix">
+        <thead><tr><th scope="col">TLD</th><th scope="col">1</th><th scope="col">2</th><th scope="col">3</th><th scope="col">4<sup>*</sup></th><th scope="col">dropping</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note"><sup>*</sup> 4 characters: not in the zone (DNS only). 1–3 characters are confirmed by RDAP; <span class="q">?</span> = not in DNS, RDAP check queued. Click a cell to browse.</p>
+  </section>
+
+  <section aria-labelledby="browse-h" id="browse">
+    <h2 id="browse-h">Browse</h2>
+    <div class="filters" role="group" aria-label="Filters">
+      <div class="seg" id="f-tld" role="radiogroup" aria-label="TLD"></div>
+      <div class="seg" id="f-len" role="radiogroup" aria-label="Length"></div>
+      <div class="seg" id="f-kind" role="radiogroup" aria-label="Characters"></div>
+      <input id="f-contains" type="text" placeholder="contains…" maxlength="4" autocomplete="off" spellcheck="false" aria-label="Contains">
+    </div>
+    <p class="count" id="count"></p>
+    <ul class="list" id="list"></ul>
+    <div class="more"><button id="more" type="button" hidden>show more</button>
+      <a id="dl" class="dl" href="#">download list</a></div>
+  </section>
+
+  <div class="two">
+    <section aria-labelledby="freed-h">
+      <h2 id="freed-h">Recently freed</h2>
+      <ul class="feed" id="freed"></ul>
+    </section>
+    <section aria-labelledby="drop-h">
+      <h2 id="drop-h">Dropping soon</h2>
+      <p class="note">Registered, but in redemption or pending delete.</p>
+      <ul class="feed" id="dropping"></ul>
+    </section>
+  </div>
+
+  <section aria-labelledby="how-h" class="how">
+    <h2 id="how-h">How it works</h2>
+    <ol>
+      <li><b>Sweep.</b> Every valid label (a–z, 0–9, inner hyphens) is asked for at the TLD's authoritative name servers. <code>NXDOMAIN</code> means the name is not in the zone.</li>
+      <li><b>Verify.</b> 1–3 character candidates are looked up in the registry's RDAP service. <code>404</code> = not registered. Names in redemption or pending delete are listed as dropping.</li>
+      <li><b>Repeat.</b> A GitHub Action runs daily: 1–3 characters every day, the 1.8 million 4 character names per TLD in seven daily shards.</li>
+    </ol>
+    <p class="note">"Free" means not registered. Registries may still reserve a name or price it as premium – your registrar shows the final price.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>MIT · data CC0 · <a href="https://github.com/maximilianfeix/shortfree">source</a> · <a href="data/available.json">available.json</a> · <a href="https://github.com/maximilianfeix/shortfree/releases/tag/data">all lists</a></span>
+</footer>
+<script src="app.js" defer></script>
+</body>
+</html>

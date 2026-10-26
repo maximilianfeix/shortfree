@@ -1,0 +1,20 @@
+name: TLD request
+description: Ask for another TLD to be scanned
+labels: [tld]
+body:
+  - type: input
+    id: tld
+    attributes:
+      label: TLD
+      placeholder: .so
+    validations:
+      required: true
+  - type: input
+    id: rdap
+    attributes:
+      label: RDAP server (if you know it)
+      placeholder: https://rdap.example/
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is it worth scanning?

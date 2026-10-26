@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["data/**", "README.md"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - run: go vet ./...
+      - run: go test -race ./...
+      - name: Smoke test against live registries
+        run: |
+          go run ./cmd/shortfree check google.com zqxv93kq7plm.tools | tee out.txt
+          grep -q "google.com.*taken" out.txt
+          grep -q "zqxv93kq7plm.tools.*FREE" out.txt
+      - name: Front end syntax
+        run: node --check site/app.js

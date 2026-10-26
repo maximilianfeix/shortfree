@@ -1,0 +1,69 @@
+name: pages
+
+# Deploys the site whenever the site itself changes, without waiting for the
+# daily scan. Reads the latest state from the data release (read-only) and
+# rebuilds data files, API and SEO pages from it; commits and uploads nothing.
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "brand/**", "cmd/shortfree/pages.go", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go build -o shortfree ./cmd/shortfree
+
+      - name: Restore data (read-only)
+        run: |
+          mkdir -p state bitmaps
+          if out=$(gh release view data 2>&1); then
+            gh release download data -p 'state.json.gz' -D state
+            gh release download data -p '*.bin' -D bitmaps
+          elif grep -qi "not found" <<<"$out"; then
+            echo "no data release yet: deploying the site without data"
+          else
+            echo "$out"; exit 1
+          fi
+
+      - name: Build site
+        run: |
+          mkdir -p _site/data/4
+          cp -r site/. _site/
+          cp brand/mark.svg brand/favicon.svg brand/social-preview.png _site/
+          if [ -f state/state.json.gz ]; then
+            ./shortfree export -readme '' -four-out ''
+            cp data/*.json _site/data/
+            cp -r data/txt _site/data/
+            cp bitmaps/*.bin _site/data/4/ 2>/dev/null || true
+            cp -r dist/api _site/api
+            cp docs/openapi.yaml _site/api/
+            ./shortfree pages -data data -bitmaps bitmaps -out _site
+          fi
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v5

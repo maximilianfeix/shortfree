@@ -14,6 +14,7 @@ import (
 	"github.com/maximilianfeix/shortfree/internal/probe"
 	"github.com/maximilianfeix/shortfree/internal/rdap"
 	"github.com/maximilianfeix/shortfree/internal/store"
+	"github.com/maximilianfeix/shortfree/internal/tlds"
 )
 
 func verdictOf(dns probe.Result, r rdap.Status) string {
@@ -70,7 +71,9 @@ func cmdScan(ctx context.Context, args []string) error {
 	workers := fs.Int("workers", 64, "concurrent DNS queries per TLD")
 	rdapRPS := fs.Float64("rdap-rps", 0, "override RDAP requests per second for every registry host (0 = per-registry defaults)")
 	rdapTime := fs.Duration("rdap-time", 25*time.Minute, "RDAP time budget per registry host and run (0 = skip RDAP)")
+	rdapTimeNew := fs.Duration("rdap-time-new", 0, "RDAP time budget for TLDs without previous state, i.e. their first run (0 = same as -rdap-time)")
 	recheck := fs.Duration("recheck", 10*24*time.Hour, "re-verify names whose last RDAP check is older than this")
+	keepOnly := fs.Bool("keep-only", false, "save only the scanned TLDs (output of one job in a per-TLD matrix)")
 	fs.Parse(args)
 
 	st, err := store.Load(*statePath)
@@ -78,11 +81,13 @@ func cmdScan(ctx context.Context, args []string) error {
 		return err
 	}
 	now := time.Now().UTC().Truncate(time.Second)
+	scanned := parseTLDs(*tlds)
+	budgets := rdapBudgets(st, scanned, *rdapTime, *rdapTimeNew)
+	errs := make(chan error, len(scanned))
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	errs := make(chan error, 16)
 
-	for _, tld := range parseTLDs(*tlds) {
+	for _, tld := range scanned {
 		wg.Add(1)
 		go func(tld string) {
 			defer wg.Done()
@@ -91,10 +96,13 @@ func cmdScan(ctx context.Context, args []string) error {
 				errs <- err
 				return
 			}
-			var labels []string
-			for n := 1; n <= *maxLen; n++ {
-				names.Each(n, 0, 1, func(_ int, s string) { labels = append(labels, s) })
-			}
+			labels := shortLabels(tld, *maxLen)
+			mu.Lock()
+			// Create the TLD even if nothing turns out free: an empty entry
+			// in the saved state tells merge that every name was taken.
+			st.TLD(tld)
+			pruneBelowMinLen(st, tld)
+			mu.Unlock()
 			fmt.Fprintf(os.Stderr, "scan .%s: %d names via %d servers\n", tld, len(labels), len(p.Servers()))
 			var free, taken, unknown int
 			sweep(ctx, p, labels, *workers, func(l string, r probe.Result) {
@@ -137,33 +145,112 @@ func cmdScan(ctx context.Context, args []string) error {
 		}
 	}
 
-	if *rdapTime > 0 {
-		verify(ctx, st, parseTLDs(*tlds), *rdapRPS, *rdapTime, *recheck, now)
+	verify(ctx, st, scanned, *rdapRPS, budgets, *recheck, now)
+	if *keepOnly {
+		keepTLDs(st, scanned)
 	}
 	st.Updated = now
 	return st.Save(*statePath)
 }
 
+// shortLabels returns every label of length 1..maxLen that tld's registry
+// accepts.
+func shortLabels(tld string, maxLen int) []string {
+	var labels []string
+	for n := tlds.Get(tld).MinLen; n <= maxLen; n++ {
+		names.Each(n, 0, 1, func(_ int, s string) { labels = append(labels, s) })
+	}
+	return labels
+}
+
+// minLen is the shortest label tld's registry accepts.
+func minLen(tld string) int { return tlds.Get(tld).MinLen }
+
+// pruneBelowMinLen drops state entries the registry would never register,
+// e.g. from before a minimum length was known.
+func pruneBelowMinLen(st *store.State, tld string) {
+	p := tlds.Get(tld)
+	for label := range st.TLDs[tld] {
+		if !p.Allows(label) {
+			delete(st.TLDs[tld], label)
+		}
+	}
+}
+
+// keepTLDs removes every TLD except keep from st, so a matrix job's output
+// carries only the TLDs it owns.
+func keepTLDs(st *store.State, keep []string) {
+	for tld := range st.TLDs {
+		if !contains(keep, tld) {
+			delete(st.TLDs, tld)
+		}
+	}
+}
+
+// rdapBudgets returns the RDAP time budget per TLD: fresh for TLDs without
+// any state (their first run, when every name still needs a check), normal
+// for the rest. fresh <= 0 means normal.
+func rdapBudgets(st *store.State, scanned []string, normal, fresh time.Duration) map[string]time.Duration {
+	out := map[string]time.Duration{}
+	for _, tld := range scanned {
+		out[tld] = normal
+		if fresh > 0 && normal > 0 && len(st.TLDs[tld]) == 0 {
+			out[tld] = fresh
+		}
+	}
+	return out
+}
+
+// canary looks up a name known to be registered on tld. Unless the registry
+// confirms it, its 404s cannot be trusted (an endpoint that moved or answers
+// 404 for everything would mark every queued name as available).
+func canary(ctx context.Context, rc *rdap.Client, tld string) error {
+	label := tlds.Get(tld).Canary
+	cctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	info, err := rc.Lookup(cctx, label, tld)
+	if err != nil {
+		return fmt.Errorf("canary %s.%s: %w", label, tld, err)
+	}
+	if info.Status != rdap.Registered && info.Status != rdap.Dropping {
+		return fmt.Errorf("canary %s.%s is %s, want registered: RDAP answers untrusted", label, tld, info.Status)
+	}
+	return nil
+}
+
 // verify confirms not-delegated names via RDAP. Never-checked names come
 // first, then dropping names, then the stalest checks; each registry host gets
-// its own time budget, enforced by a deadline, and runs in parallel with the
-// others.
-func verify(ctx context.Context, st *store.State, tlds []string, rps float64, budget time.Duration, recheck time.Duration, now time.Time) {
+// its own time budget (the largest of its TLDs' budgets), enforced by a
+// deadline, and runs in parallel with the others. TLDs with a zero budget, and
+// TLDs whose registry fails the canary lookup, are skipped.
+func verify(ctx context.Context, st *store.State, scanned []string, rps float64, budgets map[string]time.Duration, recheck time.Duration, now time.Time) {
 	type job struct {
 		tld, label string
 		e          *store.Entry
 	}
+	rc := rdap.New(rps, userAgent)
 	byHost := map[string][]job{}
-	for _, tld := range tlds {
-		host := rdap.Endpoints[tld]
-		if host == "" {
+	hostBudget := map[string]time.Duration{}
+	for _, tld := range scanned {
+		host := rdap.Host(tld)
+		if host == "" || budgets[tld] <= 0 {
 			continue
 		}
+		var jobs []job
 		for label, e := range st.TLDs[tld] {
 			if e.RDAP == "" || e.RDAP == string(rdap.Dropping) || e.RDAP == string(rdap.Error) || now.Sub(e.CheckedAt()) > recheck {
-				byHost[host] = append(byHost[host], job{tld, label, e})
+				jobs = append(jobs, job{tld, label, e})
 			}
 		}
+		if len(jobs) == 0 {
+			continue
+		}
+		if err := canary(ctx, rc, tld); err != nil {
+			fmt.Fprintf(os.Stderr, "rdap .%s: skipped, %v\n", tld, err)
+			continue
+		}
+		hostBudget[host] = max(hostBudget[host], budgets[tld])
+		byHost[host] = append(byHost[host], jobs...)
 	}
 	rank := func(e *store.Entry) int {
 		switch e.RDAP {
@@ -176,10 +263,10 @@ func verify(ctx context.Context, st *store.State, tlds []string, rps float64, bu
 		}
 		return 3
 	}
-	rc := rdap.New(rps, userAgent)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	for host, jobs := range byHost {
+		budget := hostBudget[host]
 		sort.Slice(jobs, func(i, j int) bool {
 			a, b := jobs[i], jobs[j]
 			if rank(a.e) != rank(b.e) {
@@ -196,9 +283,9 @@ func verify(ctx context.Context, st *store.State, tlds []string, rps float64, bu
 		if max := int(budget.Seconds() * rc.Rate(host)); len(jobs) > max {
 			jobs = jobs[:max]
 		}
-		fmt.Fprintf(os.Stderr, "rdap %s: %d lookups\n", host, len(jobs))
+		fmt.Fprintf(os.Stderr, "rdap %s: %d lookups within %s\n", host, len(jobs), budget)
 		wg.Add(1)
-		go func(host string, jobs []job) {
+		go func(host string, jobs []job, budget time.Duration) {
 			defer wg.Done()
 			// Slow or failing registries make lookups retry, so the job count
 			// alone does not bound the run time.
@@ -243,7 +330,7 @@ func verify(ctx context.Context, st *store.State, tlds []string, rps float64, bu
 			close(ch)
 			inner.Wait()
 			fmt.Fprintf(os.Stderr, "rdap %s done: %v\n", host, counts)
-		}(host, jobs)
+		}(host, jobs, budget)
 	}
 	wg.Wait()
 }
@@ -268,6 +355,9 @@ func cmdScan4(ctx context.Context, args []string) error {
 		wg.Add(1)
 		go func(tld string) {
 			defer wg.Done()
+			if minLen(tld) > 4 {
+				return
+			}
 			path := filepath.Join(*dir, tld+".bin")
 			bm, err := store.LoadBitmap(path, space)
 			if err != nil {

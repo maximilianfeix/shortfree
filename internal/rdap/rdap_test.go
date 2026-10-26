@@ -2,12 +2,15 @@ package rdap
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/maximilianfeix/shortfree/internal/tlds"
 )
 
 func TestLookup(t *testing.T) {
@@ -56,10 +59,77 @@ func TestLookup(t *testing.T) {
 }
 
 func TestRate(t *testing.T) {
-	if r := New(0, "").Rate(Endpoints["dev"]); r != DefaultRate[Endpoints["dev"]] {
-		t.Errorf("default rate for .dev = %v", r)
+	if r := New(0, "").Rate(Host("dev")); r != 1.5 {
+		t.Errorf("default rate for .dev = %v, want 1.5", r)
 	}
-	if r := New(9, "").Rate(Endpoints["dev"]); r != 9 {
+	if r := New(9, "").Rate(Host("dev")); r != 9 {
 		t.Errorf("override rate = %v", r)
+	}
+	if r := New(0, "").Rate("rdap.example"); r != 1 {
+		t.Errorf("rate for unknown host = %v, want 1", r)
+	}
+}
+
+func TestHost(t *testing.T) {
+	for tld, want := range map[string]string{
+		"com": "rdap.verisign.com", "net": "rdap.verisign.com",
+		"xyz": "rdap.centralnic.com", "inc": "rdap.centralnic.com",
+		"cc": "tld-rdap.verisign.com", "nope": "",
+	} {
+		if got := Host(tld); got != want {
+			t.Errorf("Host(%q) = %q, want %q", tld, got, want)
+		}
+	}
+}
+
+// Every scanned TLD needs an endpoint, and every endpoint host an explicit,
+// conservative rate.
+func TestEveryDefaultTLDHasEndpointAndRate(t *testing.T) {
+	for _, tld := range tlds.Default {
+		h := Host(tld)
+		if h == "" {
+			t.Errorf(".%s: no RDAP endpoint", tld)
+			continue
+		}
+		r, ok := DefaultRate[h]
+		if !ok || r <= 0 || r > 10 {
+			t.Errorf(".%s: host %s has rate %v (set %v)", tld, h, r, ok)
+		}
+	}
+}
+
+// A Retry-After far beyond MaxWait is a ban: fail fast and stop sending.
+func TestLongRetryAfterBlocksHost(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		w.Header().Set("Retry-After", "83359")
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+	Endpoints["test"] = srv.URL + "/"
+	defer delete(Endpoints, "test")
+
+	c := New(100, "test")
+	start := time.Now()
+	for i := 0; i < 3; i++ {
+		info, err := c.Lookup(context.Background(), "x", "test")
+		if !errors.Is(err, ErrBlocked) || info.Status != Error {
+			t.Fatalf("lookup %d: %v, %v; want ErrBlocked", i, info.Status, err)
+		}
+	}
+	if time.Since(start) > 2*time.Second {
+		t.Errorf("blocked lookups took %s", time.Since(start))
+	}
+	if n := hits.Load(); n != 1 {
+		t.Errorf("server saw %d requests, want 1", n)
+	}
+}
+
+// TLDs on one host share one limiter.
+func TestSharedHostSharesLimiter(t *testing.T) {
+	c := New(0, "")
+	if c.limiter(Host("xyz")) != c.limiter(Host("fm")) {
+		t.Error("xyz and fm use different limiters on the same host")
 	}
 }

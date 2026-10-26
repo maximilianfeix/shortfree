@@ -4,23 +4,28 @@
 //	shortfree scan                     1-3 chars: DNS sweep + RDAP verification
 //	shortfree scan4                    4 chars: DNS sweep of one daily shard
 //	shortfree export                   write public data files and README tables
-//	shortfree merge <dir>...           combine parallel bootstrap outputs
+//	shortfree merge <dir>...           combine outputs of parallel scan jobs
+//	shortfree tlds                     list the scanned TLDs (-json for CI)
 //	shortfree mcp                      MCP server (stdio) for AI assistants
 package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
+
+	"github.com/maximilianfeix/shortfree/internal/tlds"
 )
 
 const userAgent = "shortfree/1.0 (+https://github.com/maximilianfeix/shortfree)"
 
-// DefaultTLDs are the TLDs scanned when -tlds is not given.
-var DefaultTLDs = []string{"com", "net", "de", "ai", "io", "dev", "app", "tools"}
+// DefaultTLDs are the TLDs scanned when -tlds is not given (see internal/tlds).
+var DefaultTLDs = tlds.Default
 
 func main() {
 	if len(os.Args) < 2 {
@@ -44,6 +49,8 @@ func main() {
 		err = cmdPages(os.Args[2:])
 	case "merge":
 		err = cmdMerge(os.Args[2:])
+	case "tlds":
+		err = cmdTLDs(os.Stdout, os.Args[2:])
 	case "mcp":
 		err = cmdMCP(ctx, os.Args[2:])
 	case "-v", "--version", "version":
@@ -71,7 +78,8 @@ Usage:
   shortfree scan4 [flags]       sweep one shard of 4 character names
   shortfree export [flags]      write data/ files and README tables
   shortfree pages [flags]       write static TLD pages, sitemap.xml, robots.txt
-  shortfree merge [flags] <dir>...  combine outputs of parallel bootstrap jobs
+  shortfree merge [flags] <dir>...  combine outputs of parallel scan jobs
+  shortfree tlds [-json]        list the scanned TLDs
   shortfree mcp                 MCP server on stdio: live check, search, suggestions
   shortfree version             print the version
 
@@ -94,4 +102,22 @@ func parseTLDs(s string) []string {
 
 func newFlags(name string) *flag.FlagSet {
 	return flag.NewFlagSet("shortfree "+name, flag.ExitOnError)
+}
+
+// cmdTLDs prints the scanned TLDs, one per line or as a JSON array. Both
+// workflows feed the JSON into their job matrix, so internal/tlds is the only
+// place a TLD has to be added.
+func cmdTLDs(w io.Writer, args []string) error {
+	fs := newFlags("tlds")
+	asJSON := fs.Bool("json", false, "print a JSON array")
+	fs.Parse(args)
+	if *asJSON {
+		return json.NewEncoder(w).Encode(DefaultTLDs)
+	}
+	for _, t := range DefaultTLDs {
+		if _, err := fmt.Fprintln(w, t); err != nil {
+			return err
+		}
+	}
+	return nil
 }

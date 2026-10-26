@@ -64,7 +64,7 @@ func fakeChecker() *checker {
 	return &checker{
 		dns: func(_ context.Context, label, tld string) (probe.Result, error) {
 			switch label + "." + tld {
-			case "free.dev", "q7.ai", "gone.io", "flaky.com", "nordap.xyz":
+			case "free.dev", "q7.ai", "gone.io", "flaky.com", "nordap.gg":
 				return probe.Free, nil
 			case "broken.zz":
 				return probe.Unknown, errors.New("lookup NS zz: no such host")
@@ -105,7 +105,7 @@ func domainsOf(f []foundDomain) []string {
 func TestCheckDomains(t *testing.T) {
 	s, _ := newTestServer(t)
 	_, out, err := s.checkDomains(context.Background(), nil, checkInput{Domains: []string{
-		"Free.DEV.", "https://q7.ai/path", "google.com", "gone.io", "flaky.com", "nordap.xyz", "broken.zz", "a.b.c", "-x.dev",
+		"Free.DEV.", "https://q7.ai/path", "google.com", "gone.io", "flaky.com", "nordap.gg", "broken.zz", "a.b.c", "-x.dev",
 	}})
 	if err != nil {
 		t.Fatal(err)
@@ -119,7 +119,7 @@ func TestCheckDomains(t *testing.T) {
 		{"google.com", "taken", "registered", "taken", false, false},
 		{"gone.io", "free", "dropping", "dropping soon", false, false},
 		{"flaky.com", "free", "error", "probably free (RDAP failed)", false, false},
-		{"nordap.xyz", "free", "-", "probably free (no RDAP for this TLD)", false, false},
+		{"nordap.gg", "free", "-", "probably free (no RDAP for this TLD)", false, false},
 		{"broken.zz", "-", "-", "error", false, false},
 		{"a.b.c", "-", "-", "invalid (want label.tld)", false, false},
 		{"-x.dev", "-", "-", "invalid (want label.tld)", false, false},

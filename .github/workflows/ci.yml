@@ -23,9 +23,9 @@ jobs:
       - run: go test -race ./...
       - name: Smoke test against live registries
         run: |
-          go run ./cmd/shortfree check google.com zqxv93kq7plm.tools | tee out.txt
+          go run ./cmd/shortfree check google.com zqxv93kq7plm.com | tee out.txt
           grep -q "google.com.*taken" out.txt
-          grep -q "zqxv93kq7plm.tools.*FREE" out.txt
+          grep -q "zqxv93kq7plm.com.*FREE" out.txt
       - name: Front end syntax
         run: node --check site/app.js
 
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v7
       - id: name
         name: Random name nobody has registered
-        run: echo "free=sf-ci-$(openssl rand -hex 8).tools" >> "$GITHUB_OUTPUT"
+        run: echo "free=sf-ci-$(openssl rand -hex 8).com" >> "$GITHUB_OUTPUT"
       - id: watch
         uses: ./
         with:

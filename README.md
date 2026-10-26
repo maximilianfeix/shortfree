@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  Every unregistered 1–4 character domain on <b>.com .net .de .ai .io .dev .app .tools</b>,<br>
+  Every unregistered 1–4 character domain on <b>.com .net .org .io .ai .dev</b> and <a href="docs/tlds.md">more TLDs</a>,<br>
   checked at the registries' own name servers and RDAP services every day.
 </p>
 
@@ -50,7 +50,7 @@
 <a id="try-it"></a>
 ## Try it
 
-**No install:** open [maximilianfeix.github.io/shortfree](https://maximilianfeix.github.io/shortfree/), type 1–4 characters and see the status on all eight TLDs. Filter the full list by TLD, length and characters.
+**No install:** open [maximilianfeix.github.io/shortfree](https://maximilianfeix.github.io/shortfree/), type 1–4 characters and see the status on every scanned TLD. Filter the full list by TLD, length and characters.
 
 **Command line** (Go 1.27+):
 
@@ -87,7 +87,7 @@ The companion repo [free-short-domains](https://github.com/maximilianfeix/free-s
 
 | File | Content |
 |---|---|
-| [`csv/all.csv`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/csv/all.csv) | every RDAP-verified free 1–3 character domain on all eight TLDs |
+| [`csv/all.csv`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/csv/all.csv) | every RDAP-verified free 1–3 character domain on all scanned TLDs |
 | `csv/<tld>.csv`, e.g. [`csv/dev.csv`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/csv/dev.csv) | 1–3 character names with status `available`, `dropping` or `unverified` |
 | `txt/<tld>.txt`, e.g. [`txt/io.txt`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/txt/io.txt) | verified free 1–3 character domains, one per line |
 | `four-letter/<tld>.txt`, e.g. [`four-letter/com.txt`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/four-letter/com.txt) | 4-letter names (a–z) that are not in the zone |
@@ -112,18 +112,18 @@ shortfree does:
 
 shortfree can't:
 
-- **see prices or reservations.** Registries reserve some names and sell others at premium prices. RDAP reports both as unregistered. This is common for 1–2 character names on .ai .io .dev .app .tools. Your registrar shows the real price.
+- **see prices or reservations.** Registries reserve some names and sell others at premium prices. RDAP reports both as unregistered. This is common for 1–2 character names on most TLDs other than .com, .net and .de. Your registrar shows the real price.
 - **verify 4 character names via RDAP.** They are DNS-only. A registered name without name servers can appear in the 4 character lists. Run `shortfree check` on a name before you rely on it.
 - **be newer than the last scan.** The lists are a daily snapshot. A name can be registered minutes after the scan. `shortfree check` and the MCP tool `check_domains` ask the registry live.
 
 <a id="how-it-works"></a>
 ## How it works
 
-1. **Sweep.** For every label, shortfree sends an `NS` query to the TLD's authoritative name servers. `NXDOMAIN` means the name is not in the zone. All 1–3 character names on eight TLDs are about 400,000 queries and take minutes.
-2. **Verify.** Not being in the zone is not the same as being free: names on hold, without name servers or in redemption are missing too. Each 1–3 character candidate is looked up in the registry's RDAP service (Verisign, DENIC, Identity Digital, Google Registry). `404` = not registered. `pending delete` or `redemption period` = dropping.
-3. **Repeat.** [`scan.yml`](.github/workflows/scan.yml) runs every day at 03:17 UTC. It sweeps all 1–3 character names and one of seven shards of the 4 character space, so each 4 character name is rechecked once a week. RDAP results are rechecked at least every 10 days. Never-checked names go first, then dropping names, then the oldest checks.
+1. **Sweep.** For every label, shortfree sends an `NS` query to the TLD's authoritative name servers. `NXDOMAIN` means the name is not in the zone. All 1–3 character names of one TLD are about 50,000 queries and take minutes.
+2. **Verify.** Not being in the zone is not the same as being free: names on hold, without name servers or in redemption are missing too. Each 1–3 character candidate is looked up in the registry's RDAP service (Verisign, PIR, DENIC, Identity Digital, Google Registry, CentralNic and others, see [docs/tlds.md](docs/tlds.md)). Names shorter than a registry's minimum length are skipped. `404` = not registered. `pending delete` or `redemption period` = dropping.
+3. **Repeat.** [`scan.yml`](.github/workflows/scan.yml) runs every day at 03:17 UTC, one job per TLD. It sweeps all 1–3 character names and one of seven shards of the 4 character space, so each 4 character name is rechecked once a week. RDAP results are rechecked at least every 10 days. Never-checked names go first, then dropping names, then the oldest checks.
 
-Each RDAP host has its own rate limit (1.5–6 requests per second, see [`internal/rdap/rdap.go`](internal/rdap/rdap.go)) to stay within fair use. Scanner state lives in the `data` release, so the git history only carries the small public lists.
+Each RDAP host gets one total rate limit of a few requests per second, shared by all TLDs on that host and all parallel jobs (see [`internal/rdap/rdap.go`](internal/rdap/rdap.go)), to stay within fair use. Scanner state lives in the `data` release, so the git history only carries the small public lists.
 
 <a id="mcp"></a>
 ## MCP server
@@ -132,7 +132,7 @@ Each RDAP host has its own rate limit (1.5–6 requests per second, see [`intern
 
 | Tool | What it does |
 |---|---|
-| `check_domains` | live DNS + RDAP check of up to 50 domains, any length, any TLD (RDAP for the eight TLDs above) |
+| `check_domains` | live DNS + RDAP check of up to 50 domains, any length, any TLD (RDAP for every scanned TLD) |
 | `find_free_domains` | search the daily snapshot by TLD, length, character kind, substring or prefix |
 | `suggest_domains` | turn a word or project name into short candidates and return the free ones |
 | `domain_stats` | counts per TLD and length |
@@ -214,10 +214,10 @@ The registry has reserved it or prices it as premium. RDAP only says whether a n
 The scan starts at 03:17 UTC every day. Every JSON file has an `updated` field with the scan time. 1–3 character names are swept daily, 4 character names once a week.
 
 **Why are 4 character names not RDAP-verified?**
-There are 1,774,224 of them per TLD. At the rate limits shortfree uses (1.5–6 requests per second), one pass over a single TLD would take between 3 and 14 days. DNS answers the same question for most names in minutes.
+There are 1,774,224 of them per TLD. At the rate limits shortfree uses (a few requests per second per registry, shared between its TLDs), one pass over a single TLD would take weeks. DNS answers the same question for most names in minutes.
 
-**Why only these eight TLDs?**
-Each TLD needs a registry RDAP service that answers reliably at a polite rate, and each one adds about 300,000 DNS queries a day (all 1–3 character names plus a seventh of the 4 character space). To add one, see [CONTRIBUTING.md](CONTRIBUTING.md).
+**Why only these TLDs?**
+Each TLD needs a registry RDAP service that answers reliably at a polite rate, and each one adds about 300,000 DNS queries a day (all 1–3 character names plus a seventh of the 4 character space). The current list with registries and sources is in [docs/tlds.md](docs/tlds.md); to add one, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Does shortfree sell domains or track me?**
 No. There are no affiliate links, no accounts and no analytics. The site and the API are static files on GitHub Pages. The code is MIT, the data CC0.

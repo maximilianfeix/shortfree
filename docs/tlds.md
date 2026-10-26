@@ -49,16 +49,19 @@ Verified 2026-10-26: RDAP `404` for a random 15 character label, `200` for
 | run | Identity Digital | `https://rdap.identitydigital.services/rdap/` | IANA | 1 | RDAP check pending, see below |
 | inc | Intercap / CentralNic | `https://rdap.centralnic.com/inc/` | IANA | 1 | high registration price |
 
-Rates (`rdap.DefaultRate`, per host name, so TLDs on one host share them):
-Verisign 4/s, Identity Digital 3/s, DENIC 2/s, PIR 2/s, `.co` 2/s,
-CentralNic 2/s, Verisign `.cc` 2/s, Google 1.5/s, `.tv` `.to` `.is` `.ly`
-`.so` 1/s. The daily scan runs one TLD per runner, so in CI each TLD gets
-its host's full rate from its own IP.
+Rates (`rdap.DefaultRate`) are the **total** per RDAP host name, however
+many runners scan in parallel: Verisign 4/s (.com + .net), Identity Digital
+2/s (.ai + .io + .tools + .run), DENIC 2/s, PIR 2/s, `.co` 2/s, CentralNic
+2/s (.xyz + .fm + .inc), Verisign `.cc` 2/s, Google 1.5/s (.dev + .app),
+`.tv` `.to` `.is` `.ly` `.so` 1/s. Each scan takes the share of the TLDs it
+scans (`rdap.SharedRate`): the per-TLD matrix job for `.ai` gets 2/4 =
+0.5/s, a local run of all TLDs gets the whole total. Adding a TLD to a
+shared host lowers the others' share instead of raising the load.
 
 **Identity Digital ban (2026-10-26).** Later on the day its 10 req/s
 measurement, `rdap.identitydigital.services` answered every request from the
 measuring IP with Cloudflare error 1015 and `Retry-After: 83359` (~23 h).
-Its rate is now 3/s, and a `Retry-After` above 10 minutes makes the client
+Its total is now 2/s, and a `Retry-After` above 10 minutes makes the client
 stop asking that host until it expires (`rdap.ErrBlocked`) instead of
 retrying every queued name. Because of the ban, the `.run` RDAP answers
 above could not be checked from here; `.run` is in the IANA bootstrap

@@ -21,9 +21,9 @@ The action builds shortfree from its own source at the ref you use (`@main`, a t
 
 The step summary shows a table with the verdict, DNS and RDAP status and, for dropping names, the expiry date. Invalid domains and failed lookups are reported as warnings and are in neither `free` nor `taken`.
 
-`free` only contains names the registry confirmed. On TLDs without RDAP support in shortfree (anything except .com .net .de .ai .io .dev .app .tools) the verdict is at best `probably free (no RDAP for this TLD)`, which you find in `results`.
+`free` only contains names the registry confirmed. On TLDs without RDAP support in shortfree (anything not listed in [tlds.md](tlds.md)) the verdict is at best `probably free (no RDAP for this TLD)`, which you find in `results`.
 
-A free name can still be reserved or premium-priced; `premium_likely` is set for 1–2 character names outside .com, .net and .de. Check the price at your registrar.
+A free name can still be reserved or premium-priced; `premium_likely` is set for 1–2 character names outside .com, .net and .de. Names shorter than a registry's minimum length (e.g. 1–3 characters on .ly) get the verdict `not registrable (...)`. Check the price at your registrar.
 
 ## Example: open an issue when a watched domain becomes free
 
@@ -83,4 +83,4 @@ A failed scheduled run sends the usual GitHub notification email.
 
 ## Rate limits
 
-Each registry's RDAP service is rate-limited inside shortfree (1.5–6 requests per second), so expect about a second per domain. Keep watch lists short and run them once a day.
+Each registry's RDAP service is rate-limited inside shortfree (a few requests per second per registry), so expect about a second per domain. Keep watch lists short and run them once a day.

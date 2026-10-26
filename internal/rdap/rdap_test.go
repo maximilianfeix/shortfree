@@ -126,6 +126,51 @@ func TestLongRetryAfterBlocksHost(t *testing.T) {
 	}
 }
 
+func TestSharedRate(t *testing.T) {
+	id, google := Host("ai"), Host("dev")
+	cases := []struct {
+		name         string
+		host         string
+		scanned, all []string
+		want         float64
+	}{
+		{"one of four on Identity Digital", id, []string{"ai"}, tlds.Default, 0.5},
+		{"one of two on Google", google, []string{"dev"}, tlds.Default, 0.75},
+		{"alone on its host", Host("de"), []string{"de"}, tlds.Default, 2},
+		{"all TLDs: full total", id, tlds.Default, tlds.Default, 2},
+		{"host not scanned", id, []string{"de"}, tlds.Default, 0},
+		{"extra TLD outside the list counts too", id, []string{"ai"}, []string{"io"}, 1},
+	}
+	for _, c := range cases {
+		if got := SharedRate(c.host, c.scanned, c.all); got != c.want {
+			t.Errorf("%s: SharedRate = %v, want %v", c.name, got, c.want)
+		}
+	}
+	// The matrix jobs of one host never exceed its total together.
+	for host, total := range DefaultRate {
+		var sum float64
+		for _, tld := range tlds.Default {
+			sum += SharedRate(host, []string{tld}, tlds.Default)
+		}
+		if sum > total+1e-9 {
+			t.Errorf("%s: per-TLD jobs add up to %v > total %v", host, sum, total)
+		}
+	}
+}
+
+func TestClientUsesShare(t *testing.T) {
+	c := New(0, "")
+	c.ShareWith([]string{"io"}, tlds.Default)
+	if r := c.Rate(Host("io")); r != 0.5 {
+		t.Errorf("rate for .io job = %v, want 0.5", r)
+	}
+	c = New(9, "")
+	c.ShareWith([]string{"io"}, tlds.Default)
+	if r := c.Rate(Host("io")); r != 9 {
+		t.Errorf("explicit -rdap-rps must win, got %v", r)
+	}
+}
+
 // TLDs on one host share one limiter.
 func TestSharedHostSharesLimiter(t *testing.T) {
 	c := New(0, "")

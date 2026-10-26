@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/maximilianfeix/shortfree/internal/probe"
 	"github.com/maximilianfeix/shortfree/internal/rdap"
 	"github.com/maximilianfeix/shortfree/internal/store"
 )
@@ -46,6 +47,36 @@ func TestVerifySkipsRegistryFailingCanary(t *testing.T) {
 	verify(context.Background(), st, []string{"test"}, 1000, map[string]time.Duration{"test": time.Minute}, 24*time.Hour, time.Now())
 	if e := st.TLDs["test"]["q7"]; e.RDAP != "" || e.Checked != 0 {
 		t.Errorf("q7 = %+v, want still unverified", e)
+	}
+}
+
+func TestCheckBelowMinLen(t *testing.T) {
+	c := &checker{
+		dns: func(_ context.Context, label, tld string) (probe.Result, error) {
+			if label == "bit" {
+				return probe.Taken, nil
+			}
+			return probe.Free, nil
+		},
+		rdap: func(_ context.Context, label, tld string) (rdap.Info, bool, error) {
+			if label == "bit" {
+				return rdap.Info{Status: rdap.Registered}, true, nil
+			}
+			return rdap.Info{Status: rdap.Available}, true, nil
+		},
+	}
+	for domain, want := range map[string]string{
+		"ab.so":   "not registrable (below the registry's minimum length of 3)",
+		"abc.ly":  "not registrable (below the registry's minimum length of 4)",
+		"bit.ly":  "taken", // grandfathered registrations stay taken
+		"abc.so":  "FREE",
+		"q7.dev":  "FREE",
+		"abcd.ly": "FREE",
+	} {
+		r := c.check(context.Background(), domain)
+		if r.Verdict != want || r.Free != (want == "FREE") {
+			t.Errorf("%s: verdict %q free %v, want %q", domain, r.Verdict, r.Free, want)
+		}
 	}
 }
 

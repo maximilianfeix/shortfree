@@ -47,17 +47,17 @@ var Endpoints = map[string]string{
 	"so":    "https://rdap.nic.so/",
 }
 
-// DefaultRate is the sustained requests per second we send to each RDAP host
-// name. TLDs that share a host (CentralNic, Identity Digital, Verisign) share
-// its limit. Measured 2026-10-26: Identity Digital served 10/s without errors
-// but later that day banned the client IP for ~23 h (Cloudflare 1015,
-// Retry-After 83359), so it runs at 3/s; Google answered 429 at 10/s; hosts
-// added later start at 1-2/s. The daily scan runs one TLD per runner (own
-// IP), so these limits apply per TLD there.
+// DefaultRate is the TOTAL requests per second shortfree sends to each RDAP
+// host name, however many runners scan in parallel: TLDs on one host
+// (Identity Digital, Google, CentralNic, Verisign) split it, see SharedRate.
+// Measured 2026-10-26: Identity Digital served 10/s without errors but later
+// that day banned the client IP for ~23 h (Cloudflare 1015, Retry-After
+// 83359), so it gets 2/s in total; Google answered 429 at 10/s; hosts added
+// later start at 1-2/s.
 var DefaultRate = map[string]float64{
 	"rdap.verisign.com":               4,
 	"rdap.denic.de":                   2,
-	"rdap.identitydigital.services":   3,
+	"rdap.identitydigital.services":   2,
 	"pubapi.registry.google":          1.5,
 	"rdap.publicinterestregistry.org": 2,
 	"rdap.registry.co":                2,
@@ -82,6 +82,36 @@ func Host(tld string) string {
 		return base
 	}
 	return u.Hostname()
+}
+
+// SharedRate returns the requests per second a process scanning the TLDs in
+// scanned may send to host, out of the host's total in DefaultRate: the total
+// is split evenly over every TLD on that host in all (the full TLD list) and
+// scanned, and this process gets the shares of the TLDs it scans. A matrix
+// job scanning only .ai gets a quarter of Identity Digital's total when .ai,
+// .io, .tools and .run share it; a local run of all TLDs gets the whole.
+func SharedRate(host string, scanned, all []string) float64 {
+	total, ok := DefaultRate[host]
+	if !ok {
+		total = 1
+	}
+	onHost := map[string]bool{}
+	mine := map[string]bool{}
+	for _, t := range all {
+		if Host(t) == host {
+			onHost[t] = true
+		}
+	}
+	for _, t := range scanned {
+		if Host(t) == host {
+			onHost[t] = true
+			mine[t] = true
+		}
+	}
+	if len(mine) == 0 {
+		return 0
+	}
+	return total * float64(len(mine)) / float64(len(onHost))
 }
 
 // Status is the registry's view of a name.
@@ -113,6 +143,8 @@ type Client struct {
 	// ErrBlocked meanwhile.
 	MaxWait time.Duration
 	rps     float64
+
+	scanned, all []string // set by ShareWith
 
 	mu      sync.Mutex
 	limits  map[string]*rate.Limiter
@@ -162,10 +194,25 @@ func (c *Client) limiter(host string) *rate.Limiter {
 	return l
 }
 
+// ShareWith makes the client use only the share of each host's total rate
+// that belongs to the scanned TLDs (see SharedRate), for scans that run in
+// parallel with others covering the rest of all. Call it before the first
+// lookup.
+func (c *Client) ShareWith(scanned, all []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.scanned, c.all = scanned, all
+}
+
 // Rate returns the requests per second used for host (see Host).
 func (c *Client) Rate(host string) float64 {
 	if c.rps > 0 {
 		return c.rps
+	}
+	if c.scanned != nil {
+		if r := SharedRate(host, c.scanned, c.all); r > 0 {
+			return r
+		}
 	}
 	if r, ok := DefaultRate[host]; ok {
 		return r

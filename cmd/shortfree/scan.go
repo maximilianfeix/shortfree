@@ -229,6 +229,9 @@ func verify(ctx context.Context, st *store.State, scanned []string, rps float64,
 		e          *store.Entry
 	}
 	rc := rdap.New(rps, userAgent)
+	// Other jobs scan the other TLDs at the same time: use only our share
+	// of each registry's total rate.
+	rc.ShareWith(scanned, tlds.Default)
 	byHost := map[string][]job{}
 	hostBudget := map[string]time.Duration{}
 	for _, tld := range scanned {
@@ -283,7 +286,7 @@ func verify(ctx context.Context, st *store.State, scanned []string, rps float64,
 		if max := int(budget.Seconds() * rc.Rate(host)); len(jobs) > max {
 			jobs = jobs[:max]
 		}
-		fmt.Fprintf(os.Stderr, "rdap %s: %d lookups within %s\n", host, len(jobs), budget)
+		fmt.Fprintf(os.Stderr, "rdap %s: %d lookups within %s at %.2f/s\n", host, len(jobs), budget, rc.Rate(host))
 		wg.Add(1)
 		go func(host string, jobs []job, budget time.Duration) {
 			defer wg.Done()

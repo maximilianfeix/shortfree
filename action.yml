@@ -1,0 +1,97 @@
+name: shortfree domain watch
+description: Check domains live at the registry (authoritative DNS + RDAP). Outputs the free ones and can fail the job when a domain is free or taken.
+author: maximilianfeix
+
+branding:
+  icon: globe
+  color: green
+
+inputs:
+  domains:
+    description: Domains to check, separated by newlines, spaces or commas (e.g. "acme.dev acme.io").
+    required: true
+  fail-when:
+    description: "free: fail if any domain is free. taken: fail if any domain is registered (incl. dropping). never: only report."
+    required: false
+    default: never
+
+outputs:
+  free:
+    description: JSON array of the domains the registry confirmed as not registered, e.g. ["acme.dev"]. [] if none.
+    value: ${{ steps.check.outputs.free }}
+  taken:
+    description: JSON array of the registered domains (verdict "taken" or "dropping soon").
+    value: ${{ steps.check.outputs.taken }}
+  results:
+    description: JSON array with one object per domain (domain, dns, rdap, verdict, free, premium_likely, expires, epp_status, error), as printed by "shortfree check -json".
+    value: ${{ steps.check.outputs.results }}
+
+runs:
+  using: composite
+  steps:
+    # The action builds shortfree from its own checkout, so the CLI is always
+    # the code at the ref you put after "@" (tag, branch or commit).
+    - id: src
+      shell: bash
+      run: echo "dir=$GITHUB_ACTION_PATH" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/setup-go@v7
+      with:
+        go-version-file: ${{ steps.src.outputs.dir }}/go.mod
+        cache-dependency-path: ${{ steps.src.outputs.dir }}/go.sum
+
+    - name: Build shortfree
+      shell: bash
+      working-directory: ${{ steps.src.outputs.dir }}
+      run: go build -trimpath -o "$RUNNER_TEMP/shortfree$(go env GOEXE)" ./cmd/shortfree
+
+    - id: check
+      name: Check domains
+      shell: bash
+      env:
+        DOMAINS: ${{ inputs.domains }}
+        FAIL_WHEN: ${{ inputs.fail-when }}
+      run: |
+        set -euo pipefail
+        case "$FAIL_WHEN" in
+          free|taken|never) ;;
+          *) echo "::error::fail-when must be free, taken or never, got '$FAIL_WHEN'"; exit 1 ;;
+        esac
+        read -r -a list <<< "$(tr ',\r\n\t' '    ' <<< "$DOMAINS")"
+        if [ "${#list[@]}" -eq 0 ]; then
+          echo "::error::no domains given"; exit 1
+        fi
+
+        out="$RUNNER_TEMP/shortfree-results.json"
+        "$RUNNER_TEMP/shortfree$(go env GOEXE)" check -json "${list[@]}" > "$out"
+
+        free=$(jq -c '[.[] | select(.free) | .domain]' "$out")
+        taken=$(jq -c '[.[] | select(.verdict == "taken" or .verdict == "dropping soon") | .domain]' "$out")
+        {
+          echo "free=$free"
+          echo "taken=$taken"
+          echo "results=$(jq -c . "$out")"
+        } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "### shortfree domain watch"
+          echo
+          echo "| Domain | Verdict | DNS | RDAP | Expires |"
+          echo "|---|---|---|---|---|"
+          jq -r '.[] | "| `\(.domain)` | \(if .free then "**FREE**" else .verdict end)\(if .premium_likely then " (likely premium)" else "" end) | \(.dns) | \(.rdap) | \(.expires // "" | .[:10]) |"' "$out"
+          echo
+          echo "Checked $(date -u '+%Y-%m-%d %H:%M UTC') at the registries' name servers and RDAP services."
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        jq -r '.[] | select(.verdict | startswith("invalid") or startswith("unknown") or . == "error") | "::warning::\(.domain): \(.verdict) \(.error // "")"' "$out"
+
+        nfree=$(jq 'length' <<< "$free")
+        ntaken=$(jq 'length' <<< "$taken")
+        echo "free: $free"
+        echo "taken: $taken"
+        if [ "$FAIL_WHEN" = free ] && [ "$nfree" -gt 0 ]; then
+          echo "::error::$nfree domain(s) free: $free"; exit 1
+        fi
+        if [ "$FAIL_WHEN" = taken ] && [ "$ntaken" -gt 0 ]; then
+          echo "::error::$ntaken domain(s) registered: $taken"; exit 1
+        fi

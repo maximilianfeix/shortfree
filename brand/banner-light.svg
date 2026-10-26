@@ -1,11 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
-  <title id="title">shortfree — Free 1–4 character domains. Rescanned daily.</title>
-  <desc id="desc">The shortfree dot-and-cursor mark and wordmark on a light background.</desc>
-  <rect width="1200" height="300" fill="#F7F9FD"/>
-  <g transform="translate(64 70) scale(.3125)">
-    <rect width="512" height="512" rx="96" fill="#315BEE"/>
-    <path d="M128 288h80v80h-80zM256 112h128v288H256v-48h80V160h-80z" fill="#FFFFFF"/>
-  </g>
-  <text x="264" y="148" fill="#14213A" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="76" font-weight="700" letter-spacing="-4">shortfree</text>
-  <text x="267" y="198" fill="#526079" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="27">Free 1–4 character domains. Rescanned daily.</text>
+<title id="title">shortfree — every free 1–4 character domain</title>
+<desc id="desc">Verified daily. Illustrative domain data: x7.dev free; qz.app free; kfo.ai dropping. These are layout examples, not live availability claims.</desc>
+<path fill="#FAFAF7" d="M0 0H1200V300H0Z"/>
+<g transform="translate(56 72) scale(0.140625)"><rect width="512" height="512" rx="112" fill="#0B0C0E"/><circle cx="160" cy="256" r="32" fill="#1FC16B"/><path d="M256 256H416V288H256Z" fill="#FAFAF7"/></g>
+<g transform="translate(152 80) scale(0.875)" fill="#0B0C0E" fill-rule="evenodd">
+  <path transform="translate(0 0)" d="M8 16H32V24H12Q8 24 8 28V32Q8 36 12 36H24Q32 36 32 44V56Q32 64 24 64H0V56H20Q24 56 24 52V48Q24 44 20 44H8Q0 44 0 36V24Q0 16 8 16Z"/>
+  <path transform="translate(40 0)" d="M0 0H8V16H24Q32 16 32 24V64H24V28Q24 24 20 24H8V64H0Z"/>
+  <path transform="translate(80 0)" d="M10 16H22Q32 16 32 26V54Q32 64 22 64H10Q0 64 0 54V26Q0 16 10 16ZM12 24Q8 24 8 28V52Q8 56 12 56H20Q24 56 24 52V28Q24 24 20 24Z"/>
+  <path transform="translate(120 0)" d="M0 16H8V20Q12 16 20 16H32V24H20Q8 24 8 36V64H0Z"/>
+  <path transform="translate(160 0)" d="M12 4H20V16H32V24H20V52Q20 56 24 56H32V64H24Q12 64 12 52V24H0V16H12Z"/>
+  <path transform="translate(200 0)" d="M8 12Q8 0 20 0H32V8H20Q16 8 16 12V16H32V24H16V64H8V24H0V16H8Z"/>
+  <path transform="translate(240 0)" d="M0 16H8V20Q12 16 20 16H32V24H20Q8 24 8 36V64H0Z"/>
+  <path transform="translate(280 0)" d="M8 16H24Q32 16 32 24V44H8V52Q8 56 12 56H32V64H8Q0 64 0 56V24Q0 16 8 16ZM8 28V36H24V28Q24 24 20 24H12Q8 24 8 28Z"/>
+  <path transform="translate(320 0)" d="M8 16H24Q32 16 32 24V44H8V52Q8 56 12 56H32V64H8Q0 64 0 56V24Q0 16 8 16ZM8 28V36H24V28Q24 24 20 24H12Q8 24 8 28Z"/>
+</g>
+<text x="56" y="194" font-family="system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="24" fill="#0B0C0E">Every free 1–4 character domain. Verified daily.</text>
+<path d="M760 56V244M816 98H1144M816 146H1144M816 194H1144M816 242H1144" fill="none" stroke="#C9CDD3"/>
+<text x="832" y="78" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="11" fill="#3A3F47" letter-spacing="1.2">DOMAIN</text><text x="1020" y="78" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="11" fill="#3A3F47" letter-spacing="1.2">STATUS</text>
+<text x="832" y="129" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="18" fill="#0B0C0E">x7.dev</text>
+<text x="1020" y="128" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="16" fill="#0E7A43">free</text>
+<text x="832" y="177" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="18" fill="#0B0C0E">qz.app</text>
+<text x="1020" y="176" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="16" fill="#0E7A43">free</text>
+<text x="832" y="225" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="18" fill="#0B0C0E">kfo.ai</text>
+<text x="1020" y="224" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="16" fill="#8A5A00">dropping</text>
+
 </svg>

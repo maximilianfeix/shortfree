@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">shortfree monochrome mark</title>
+<desc id="desc">A single-color rounded square with the domain dot and cursor knocked out to transparency.</desc>
+<path fill="currentColor" fill-rule="evenodd" d="M112 0H400A112 112 0 0 1 512 112V400A112 112 0 0 1 400 512H112A112 112 0 0 1 0 400V112A112 112 0 0 1 112 0ZM192 256A32 32 0 1 0 128 256A32 32 0 1 0 192 256ZM256 256H416V288H256Z"/>
+</svg>

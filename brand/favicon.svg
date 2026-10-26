@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-labelledby="title">
-  <title id="title">shortfree</title>
-  <rect width="32" height="32" rx="6" fill="#315BEE"/>
-  <path d="M8 18h5v5H8zM16 7h8v18h-8v-3h5V10h-5z" fill="#FFFFFF"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-labelledby="title desc">
+<title id="title">shortfree</title>
+<desc id="desc">Green domain dot and paper cursor on ink, aligned to the 32-pixel grid.</desc>
+<rect width="32" height="32" rx="7" fill="#0B0C0E"/><circle cx="10" cy="16" r="2" fill="#1FC16B"/><path d="M16 16H26V18H16Z" fill="#FAFAF7"/>
 </svg>

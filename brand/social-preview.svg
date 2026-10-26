@@ -1,34 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
-  <title id="title">shortfree — Free 1–4 character domains. Rescanned daily.</title>
-  <desc id="desc">Open-source domain discovery using DNS and RDAP. Illustrative status chips: q7.tools, x4k.app, and zv-9.dev, each labeled free.</desc>
-  <rect width="1280" height="640" fill="#0C1426"/>
-  <g transform="translate(72 72) scale(.25)">
-    <rect width="512" height="512" rx="96" fill="#315BEE"/>
-    <path d="M128 288h80v80h-80zM256 112h128v288H256v-48h80V160h-80z" fill="#FFFFFF"/>
-  </g>
-  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
-    <text x="236" y="166" fill="#F3F6FC" font-size="80" font-weight="700" letter-spacing="-4">shortfree</text>
-    <text x="72" y="332" fill="#A4B2C8" font-size="20">DNS + RDAP / open source</text>
-    <g fill="#152139" stroke="#637590">
-      <rect x="72" y="366" width="352" height="84" rx="12"/>
-      <rect x="448" y="366" width="352" height="84" rx="12"/>
-      <rect x="824" y="366" width="384" height="84" rx="12"/>
-    </g>
-    <g fill="#F3F6FC" font-size="25">
-      <text x="96" y="417">q7.tools</text>
-      <text x="472" y="417">x4k.app</text>
-      <text x="848" y="417">zv-9.dev</text>
-    </g>
-    <g fill="#69E0AA" font-size="20">
-      <circle cx="335" cy="408" r="4"/>
-      <text x="348" y="415">free</text>
-      <circle cx="711" cy="408" r="4"/>
-      <text x="724" y="415">free</text>
-      <circle cx="1119" cy="408" r="4"/>
-      <text x="1132" y="415">free</text>
-    </g>
-    <text x="72" y="490" fill="#A4B2C8" font-size="16">Illustrative domains / availability changes</text>
-    <text x="72" y="572" fill="#91ACFF" font-size="22">.com .net .de .ai .io .dev .app .tools</text>
-  </g>
-  <text x="72" y="268" fill="#F3F6FC" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="36">Free 1–4 character domains. Rescanned daily.</text>
+<title id="title">shortfree — every free 1–4 character domain</title>
+<desc id="desc">Verified daily across .com, .net, .de, .ai, .io, .dev, .app and .tools. DNS plus RDAP; rescanned daily; open source. Illustrative domain data: x7.dev free; qz.app free; kfo.ai dropping. These are layout examples, not live availability claims.</desc>
+<path fill="#0B0C0E" d="M0 0H1280V640H0Z"/>
+<g transform="translate(64 128) scale(0.21875)"><rect width="512" height="512" rx="112" fill="#0B0C0E"/><circle cx="160" cy="256" r="32" fill="#1FC16B"/><path d="M256 256H416V288H256Z" fill="#FAFAF7"/></g>
+<rect x="64.5" y="128.5" width="111" height="111" rx="24" fill="none" stroke="#3A3F47" stroke-width="1"/>
+<g transform="translate(208 144) scale(1.5)" fill="#FAFAF7" fill-rule="evenodd">
+  <path transform="translate(0 0)" d="M8 16H32V24H12Q8 24 8 28V32Q8 36 12 36H24Q32 36 32 44V56Q32 64 24 64H0V56H20Q24 56 24 52V48Q24 44 20 44H8Q0 44 0 36V24Q0 16 8 16Z"/>
+  <path transform="translate(40 0)" d="M0 0H8V16H24Q32 16 32 24V64H24V28Q24 24 20 24H8V64H0Z"/>
+  <path transform="translate(80 0)" d="M10 16H22Q32 16 32 26V54Q32 64 22 64H10Q0 64 0 54V26Q0 16 10 16ZM12 24Q8 24 8 28V52Q8 56 12 56H20Q24 56 24 52V28Q24 24 20 24Z"/>
+  <path transform="translate(120 0)" d="M0 16H8V20Q12 16 20 16H32V24H20Q8 24 8 36V64H0Z"/>
+  <path transform="translate(160 0)" d="M12 4H20V16H32V24H20V52Q20 56 24 56H32V64H24Q12 64 12 52V24H0V16H12Z"/>
+  <path transform="translate(200 0)" d="M8 12Q8 0 20 0H32V8H20Q16 8 16 12V16H32V24H16V64H8V24H0V16H8Z"/>
+  <path transform="translate(240 0)" d="M0 16H8V20Q12 16 20 16H32V24H20Q8 24 8 36V64H0Z"/>
+  <path transform="translate(280 0)" d="M8 16H24Q32 16 32 24V44H8V52Q8 56 12 56H32V64H8Q0 64 0 56V24Q0 16 8 16ZM8 28V36H24V28Q24 24 20 24H12Q8 24 8 28Z"/>
+  <path transform="translate(320 0)" d="M8 16H24Q32 16 32 24V44H8V52Q8 56 12 56H32V64H8Q0 64 0 56V24Q0 16 8 16ZM8 28V36H24V28Q24 24 20 24H12Q8 24 8 28Z"/>
+</g>
+<path d="M888 138H1216M888 186H1216M888 234H1216M888 282H1216" fill="none" stroke="#24272D"/>
+<text x="904" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="11" fill="#8A919C" letter-spacing="1.2">DOMAIN</text><text x="1092" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="11" fill="#8A919C" letter-spacing="1.2">STATUS</text>
+<text x="904" y="169" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="18" fill="#FAFAF7">x7.dev</text>
+<text x="1092" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="16" fill="#1FC16B">free</text>
+<text x="904" y="217" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="18" fill="#FAFAF7">qz.app</text>
+<text x="1092" y="216" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="16" fill="#1FC16B">free</text>
+<text x="904" y="265" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="18" fill="#FAFAF7">kfo.ai</text>
+<text x="1092" y="264" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="16" fill="#F5A524">dropping</text>
+<text x="64" y="340" font-family="system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="36" fill="#FAFAF7">Every free 1–4 character domain. Verified daily.</text>
+<path d="M64 400H1216" stroke="#24272D"/>
+<text x="64" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="24" fill="#8A919C">.com</text>
+<text x="208" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="24" fill="#8A919C">.net</text>
+<text x="352" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="24" fill="#8A919C">.de</text>
+<text x="496" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="24" fill="#8A919C">.ai</text>
+<text x="640" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="24" fill="#8A919C">.io</text>
+<text x="784" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="24" fill="#8A919C">.dev</text>
+<text x="928" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="24" fill="#8A919C">.app</text>
+<text x="1072" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="24" fill="#8A919C">.tools</text>
+<text x="64" y="560" font-family="system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="20" fill="#8A919C">DNS + RDAP · rescanned daily · open source</text>
+
 </svg>

@@ -3,90 +3,208 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>shortfree – free 1–4 character domains, rescanned daily</title>
-<meta name="description" content="Every unregistered 1–4 character domain on .com .net .de .ai .io .dev .app .tools. Verified via registry DNS and RDAP, rescanned daily by GitHub Actions.">
-<meta name="theme-color" content="#0C1426">
-<meta property="og:title" content="shortfree – free 1–4 character domains">
-<meta property="og:description" content="Every unregistered short domain on 8 TLDs, rescanned daily. Open source.">
+<title>shortfree – every free 1–4 character domain, verified daily</title>
+<meta name="description" content="Search every unregistered 1–4 character domain on .com, .net, .de, .ai, .io, .dev, .app and .tools. Checked against registry DNS and RDAP, rescanned daily. Open data, no tracking.">
+<link rel="canonical" href="https://maximilianfeix.github.io/shortfree/">
+<meta name="theme-color" content="#0B0C0E" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FAFAF7" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="dark light">
+<meta property="og:site_name" content="shortfree">
+<meta property="og:title" content="shortfree – every free 1–4 character domain">
+<meta property="og:description" content="Every unregistered short domain on eight TLDs, verified against the registries and rescanned daily. Open source, open data.">
+<meta property="og:url" content="https://maximilianfeix.github.io/shortfree/">
 <meta property="og:image" content="https://maximilianfeix.github.io/shortfree/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="shortfree – every free 1–4 character domain, verified daily">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="shortfree – every free 1–4 character domain">
+<meta name="twitter:description" content="Every unregistered short domain on eight TLDs, verified against the registries and rescanned daily.">
+<meta name="twitter:image" content="https://maximilianfeix.github.io/shortfree/social-preview.png">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="mark.svg">
 <link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "shortfree",
+  "url": "https://maximilianfeix.github.io/shortfree/",
+  "description": "Every unregistered 1–4 character domain on eight TLDs, verified against registry DNS and RDAP and rescanned daily."
+}
+</script>
 </head>
 <body>
+<a class="skip" href="#q">Skip to search</a>
 <header class="top">
-  <a class="brand" href="./" aria-label="shortfree home">
-    <img src="mark.svg" alt="" width="32" height="32">
-    <span>shortfree</span>
-  </a>
-  <p class="scan" id="scan">loading scan…</p>
-  <a class="gh" href="https://github.com/maximilianfeix/shortfree">GitHub ↗</a>
+  <div class="wrap top-in">
+    <a class="brand" href="./" aria-label="shortfree home">
+      <svg class="lockup" viewBox="0 0 480 96" width="200" height="40" aria-hidden="true" focusable="false"><g transform="translate(8 8) scale(0.15625)"><rect width="512" height="512" rx="112" fill="#0B0C0E"/><circle cx="160" cy="256" r="32" fill="#1FC16B"/><path d="M256 256H416V288H256Z" fill="#FAFAF7"/></g><rect class="lk-edge" x="8.5" y="8.5" width="79" height="79" rx="17" fill="none" stroke-width="1"/><g class="lk-word" transform="translate(112 16)" fill-rule="evenodd"><path d="M8 16H32V24H12Q8 24 8 28V32Q8 36 12 36H24Q32 36 32 44V56Q32 64 24 64H0V56H20Q24 56 24 52V48Q24 44 20 44H8Q0 44 0 36V24Q0 16 8 16Z"/><path transform="translate(40 0)" d="M0 0H8V16H24Q32 16 32 24V64H24V28Q24 24 20 24H8V64H0Z"/><path transform="translate(80 0)" d="M10 16H22Q32 16 32 26V54Q32 64 22 64H10Q0 64 0 54V26Q0 16 10 16ZM12 24Q8 24 8 28V52Q8 56 12 56H20Q24 56 24 52V28Q24 24 20 24Z"/><path transform="translate(120 0)" d="M0 16H8V20Q12 16 20 16H32V24H20Q8 24 8 36V64H0Z"/><path transform="translate(160 0)" d="M12 4H20V16H32V24H20V52Q20 56 24 56H32V64H24Q12 64 12 52V24H0V16H12Z"/><path transform="translate(200 0)" d="M8 12Q8 0 20 0H32V8H20Q16 8 16 12V16H32V24H16V64H8V24H0V16H8Z"/><path transform="translate(240 0)" d="M0 16H8V20Q12 16 20 16H32V24H20Q8 24 8 36V64H0Z"/><path transform="translate(280 0)" d="M8 16H24Q32 16 32 24V44H8V52Q8 56 12 56H32V64H8Q0 64 0 56V24Q0 16 8 16ZM8 28V36H24V28Q24 24 20 24H12Q8 24 8 28Z"/><path transform="translate(320 0)" d="M8 16H24Q32 16 32 24V44H8V52Q8 56 12 56H32V64H8Q0 64 0 56V24Q0 16 8 16ZM8 28V36H24V28Q24 24 20 24H12Q8 24 8 28Z"/></g></svg>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a class="nav-opt" href="#browse">Browse</a>
+      <a class="nav-opt" href="#use">API &amp; MCP</a>
+      <a href="https://github.com/maximilianfeix/shortfree">GitHub</a>
+    </nav>
+  </div>
 </header>
 
-<main>
-  <section class="hero">
-    <h1>Free short domains.<br><span>Rescanned every day.</span></h1>
-    <p class="lede">Every unregistered 1–4 character name on eight TLDs, checked against the registries' own name servers and RDAP. No registrar, no tracking, no upsell.</p>
+<main id="main">
+  <section class="hero wrap" aria-labelledby="hero-h">
+    <h1 id="hero-h">Every free 1–4 character domain. <span>Verified daily.</span></h1>
+    <p class="lede">Unregistered names on eight TLDs, checked against the registries' own name servers and RDAP. No registrar, no tracking, no upsell.</p>
 
-    <label class="search" for="q">
-      <span class="prompt" aria-hidden="true">$ check</span>
-      <input id="q" type="text" inputmode="url" autocomplete="off" spellcheck="false" maxlength="4" placeholder="q7x" aria-describedby="qhint">
-    </label>
-    <p id="qhint" class="hint">Type 1–4 characters (a–z, 0–9, -) to see the status on every TLD.</p>
-    <ol id="chips" class="chips" aria-live="polite"></ol>
+    <form class="search" role="search" id="search" action="#" autocomplete="off">
+      <label for="q" class="search-label">Check a name or domain</label>
+      <div class="search-box">
+        <span class="prompt" aria-hidden="true">$</span>
+        <input id="q" name="q" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="80" placeholder="x7 or x7.dev" aria-describedby="qhint" enterkeyhint="search">
+      </div>
+      <p id="qhint" class="hint">1–4 characters (a–z, 0–9, inner hyphen). Add a TLD to jump straight to it.</p>
+    </form>
+    <div id="results" class="results" aria-live="polite" aria-atomic="false"></div>
+
+    <dl class="facts" id="facts" aria-busy="true">
+      <div><dt>Last scan</dt><dd class="num" id="f-scan">loading</dd></div>
+      <div><dt>Verified free, 1–3 chars</dt><dd class="num" id="f-total">–</dd></div>
+      <div><dt>TLDs</dt><dd class="num" id="f-tlds">–</dd></div>
+    </dl>
   </section>
 
-  <section aria-labelledby="matrix-h">
-    <h2 id="matrix-h">Free names by TLD and length</h2>
-    <div class="matrix-wrap">
-      <table class="matrix" id="matrix">
-        <thead><tr><th scope="col">TLD</th><th scope="col">1</th><th scope="col">2</th><th scope="col">3</th><th scope="col">4<sup>*</sup></th><th scope="col">dropping</th></tr></thead>
-        <tbody></tbody>
-      </table>
+  <div id="error" class="wrap" hidden>
+    <div class="panel state-error" role="alert">
+      <h2>The data files did not load</h2>
+      <p>The site is static and reads the daily snapshot from <code>data/</code>. Reload the page, or download the lists directly from the <a href="https://github.com/maximilianfeix/shortfree/releases/tag/data">data release</a>.</p>
+      <button type="button" class="btn" id="retry">Try again</button>
     </div>
-    <p class="note"><sup>*</sup> 4 characters: not in the zone (DNS only). 1–3 characters are confirmed by RDAP; <span class="q">?</span> = not in DNS, RDAP check queued. Click a cell to browse.</p>
-  </section>
+  </div>
 
-  <section aria-labelledby="browse-h" id="browse">
-    <h2 id="browse-h">Browse</h2>
-    <div class="filters" role="group" aria-label="Filters">
-      <div class="seg" id="f-tld" role="radiogroup" aria-label="TLD"></div>
-      <div class="seg" id="f-len" role="radiogroup" aria-label="Length"></div>
-      <div class="seg" id="f-kind" role="radiogroup" aria-label="Characters"></div>
-      <input id="f-contains" type="text" placeholder="contains…" maxlength="4" autocomplete="off" spellcheck="false" aria-label="Contains">
+  <section class="wrap section" aria-labelledby="matrix-h">
+    <div class="section-head">
+      <h2 id="matrix-h">Free names by TLD and length</h2>
+      <p class="note">Select a count to browse it.</p>
     </div>
-    <p class="count" id="count"></p>
-    <ul class="list" id="list"></ul>
-    <div class="more"><button id="more" type="button" hidden>show more</button>
-      <a id="dl" class="dl" href="#">download list</a></div>
+    <table class="matrix" id="matrix">
+      <caption class="sr-only">Free domain names per TLD and label length</caption>
+      <thead><tr><th scope="col">TLD</th><th scope="col">1 char</th><th scope="col">2 chars</th><th scope="col">3 chars</th><th scope="col">4 chars<sup>*</sup></th><th scope="col">Dropping</th></tr></thead>
+      <tbody>
+        <tr class="ph"><th scope="row">.com</th><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+        <tr class="ph"><th scope="row">.net</th><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+        <tr class="ph"><th scope="row">.de</th><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+        <tr class="ph"><th scope="row">.ai</th><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+        <tr class="ph"><th scope="row">.io</th><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+        <tr class="ph"><th scope="row">.dev</th><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+        <tr class="ph"><th scope="row">.app</th><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+        <tr class="ph"><th scope="row">.tools</th><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+      </tbody>
+    </table>
+    <p class="note"><sup>*</sup> 4 characters: not in the zone (DNS check only). 1–3 characters are confirmed by RDAP; <span class="mono warn-text">+n?</span> are not in DNS and still wait for RDAP.</p>
   </section>
 
-  <div class="two">
+  <section class="wrap section" aria-labelledby="browse-h" id="browse">
+    <div class="section-head">
+      <h2 id="browse-h">Browse</h2>
+    </div>
+    <div class="filters">
+      <fieldset class="seg" id="f-tld"><legend>TLD</legend></fieldset>
+      <fieldset class="seg" id="f-len"><legend>Length</legend></fieldset>
+      <fieldset class="seg" id="f-kind"><legend>Characters</legend></fieldset>
+      <div class="field">
+        <label for="f-contains">Contains</label>
+        <input id="f-contains" type="text" maxlength="4" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. x">
+      </div>
+    </div>
+    <p class="count" id="count" role="status">Loading the list…</p>
+    <ul class="list" id="list" aria-labelledby="browse-h"></ul>
+    <div class="more">
+      <button id="more" type="button" class="btn" hidden>Show more</button>
+      <a id="dl" class="btn btn-quiet" href="#" download>Download this list (.txt)</a>
+    </div>
+  </section>
+
+  <div class="wrap section two">
     <section aria-labelledby="freed-h">
       <h2 id="freed-h">Recently freed</h2>
-      <ul class="feed" id="freed"></ul>
+      <p class="note">Became available in the last 30 days.</p>
+      <ul class="feed" id="freed"><li class="empty">Loading…</li></ul>
     </section>
     <section aria-labelledby="drop-h">
       <h2 id="drop-h">Dropping soon</h2>
       <p class="note">Registered, but in redemption or pending delete.</p>
-      <ul class="feed" id="dropping"></ul>
+      <ul class="feed" id="dropping"><li class="empty">Loading…</li></ul>
     </section>
   </div>
 
-  <section aria-labelledby="how-h" class="how">
+  <section class="wrap section" aria-labelledby="use-h" id="use">
+    <div class="section-head">
+      <h2 id="use-h">Use the data anywhere</h2>
+      <p class="note">CC0 data, MIT code. No key, no rate limit beyond GitHub Pages.</p>
+    </div>
+    <ul class="cards">
+      <li class="card">
+        <h3><a href="api/v1/index.json">Static JSON &amp; CSV API</a></h3>
+        <p>Per-TLD and per-length lists, dropping names and the change log as plain files.</p>
+        <p class="card-links"><a href="https://github.com/maximilianfeix/shortfree/blob/main/docs/api.md">API docs</a> <a href="api/openapi.yaml">OpenAPI</a></p>
+      </li>
+      <li class="card">
+        <h3><a href="https://github.com/maximilianfeix/shortfree/blob/main/docs/mcp.md">MCP server</a></h3>
+        <p>Let Claude, Cursor or VS Code check names live and suggest free ones while you brainstorm.</p>
+        <p class="card-links"><code>shortfree mcp</code></p>
+      </li>
+      <li class="card">
+        <h3><a href="https://github.com/maximilianfeix/shortfree/blob/main/docs/action.md">GitHub Action</a></h3>
+        <p>Run shortfree from your own workflows, for example to check a shortlist of names on a schedule.</p>
+        <p class="card-links"><a href="https://github.com/maximilianfeix/shortfree/blob/main/docs/action.md">Action docs</a></p>
+      </li>
+      <li class="card">
+        <h3><a href="https://github.com/maximilianfeix/free-short-domains">free-short-domains</a></h3>
+        <p>A human-readable list of free short domains, built from the same scan data.</p>
+        <p class="card-links"><a href="https://github.com/maximilianfeix/free-short-domains">List repo</a></p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="wrap section" aria-labelledby="tlds-h">
+    <div class="section-head">
+      <h2 id="tlds-h">Lists by TLD</h2>
+      <p class="note">Plain, server-rendered lists for every TLD and length.</p>
+    </div>
+    <ul class="tld-index">
+      <li><a href="com/">.com</a> <a href="com/1-letter/">1</a> <a href="com/2-letter/">2</a> <a href="com/3-letter/">3</a> <a href="com/4-letter/">4</a></li>
+      <li><a href="net/">.net</a> <a href="net/1-letter/">1</a> <a href="net/2-letter/">2</a> <a href="net/3-letter/">3</a> <a href="net/4-letter/">4</a></li>
+      <li><a href="de/">.de</a> <a href="de/1-letter/">1</a> <a href="de/2-letter/">2</a> <a href="de/3-letter/">3</a> <a href="de/4-letter/">4</a></li>
+      <li><a href="ai/">.ai</a> <a href="ai/1-letter/">1</a> <a href="ai/2-letter/">2</a> <a href="ai/3-letter/">3</a> <a href="ai/4-letter/">4</a></li>
+      <li><a href="io/">.io</a> <a href="io/1-letter/">1</a> <a href="io/2-letter/">2</a> <a href="io/3-letter/">3</a> <a href="io/4-letter/">4</a></li>
+      <li><a href="dev/">.dev</a> <a href="dev/1-letter/">1</a> <a href="dev/2-letter/">2</a> <a href="dev/3-letter/">3</a> <a href="dev/4-letter/">4</a></li>
+      <li><a href="app/">.app</a> <a href="app/1-letter/">1</a> <a href="app/2-letter/">2</a> <a href="app/3-letter/">3</a> <a href="app/4-letter/">4</a></li>
+      <li><a href="tools/">.tools</a> <a href="tools/1-letter/">1</a> <a href="tools/2-letter/">2</a> <a href="tools/3-letter/">3</a> <a href="tools/4-letter/">4</a></li>
+    </ul>
+  </section>
+
+  <section class="wrap section how" aria-labelledby="how-h">
     <h2 id="how-h">How it works</h2>
-    <ol>
-      <li><b>Sweep.</b> Every valid label (a–z, 0–9, inner hyphens) is asked for at the TLD's authoritative name servers. <code>NXDOMAIN</code> means the name is not in the zone.</li>
-      <li><b>Verify.</b> 1–3 character candidates are looked up in the registry's RDAP service. <code>404</code> = not registered. Names in redemption or pending delete are listed as dropping.</li>
-      <li><b>Repeat.</b> A GitHub Action runs daily: 1–3 characters every day, the 1.8 million 4 character names per TLD in seven daily shards.</li>
+    <ol class="steps">
+      <li><h3>Sweep</h3><p>Every valid label (a–z, 0–9, inner hyphens) is asked for at the TLD's authoritative name servers. <code>NXDOMAIN</code> means the name is not in the zone.</p></li>
+      <li><h3>Verify</h3><p>1–3 character candidates are looked up in the registry's RDAP service. <code>404</code> means not registered. Names in redemption or pending delete are listed as dropping.</p></li>
+      <li><h3>Repeat</h3><p>A GitHub Action runs daily: 1–3 characters every day, the 1.8 million 4 character names per TLD in seven daily shards.</p></li>
     </ol>
-    <p class="note">"Free" means not registered. Registries may still reserve a name or price it as premium – your registrar shows the final price.</p>
+    <p class="note">"Free" means not registered at the last scan. Registries may still reserve a name or price it as premium, and names can change state between scans. Your registrar shows the final price. For a live answer, use <a href="https://github.com/maximilianfeix/shortfree#check-a-domain-yourself"><code>shortfree check</code></a> or the <a href="https://github.com/maximilianfeix/shortfree/blob/main/docs/mcp.md">MCP server</a>.</p>
   </section>
 </main>
 
 <footer class="foot">
-  <span>MIT · data CC0 · <a href="https://github.com/maximilianfeix/shortfree">source</a> · <a href="data/available.json">available.json</a> · <a href="https://github.com/maximilianfeix/shortfree/releases/tag/data">all lists</a></span>
+  <div class="wrap foot-in">
+    <svg class="foot-mark" viewBox="0 0 32 32" width="24" height="24" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="7" fill="#0B0C0E"/><circle cx="10" cy="16" r="2" fill="#1FC16B"/><path d="M16 16H26V18H16Z" fill="#FAFAF7"/></svg>
+    <p>Code MIT · data CC0 · no cookies, no analytics</p>
+    <nav aria-label="Footer">
+      <a href="https://github.com/maximilianfeix/shortfree">Source</a>
+      <a href="api/v1/index.json">API</a>
+      <a href="https://github.com/maximilianfeix/shortfree/blob/main/docs/mcp.md">MCP</a>
+      <a href="https://github.com/maximilianfeix/shortfree/releases/tag/data">All lists</a>
+      <a href="sitemap.xml">Sitemap</a>
+    </nav>
+  </div>
 </footer>
 <script src="app.js" defer></script>
 </body>

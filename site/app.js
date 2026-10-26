@@ -13,6 +13,9 @@ const el = (tag, props = {}, ...kids) => {
   return n;
 };
 const fmt = (n) => n.toLocaleString("en-US");
+// Registries of new gTLDs usually hold back 1-2 character names (reserved or
+// premium) even though RDAP reports them as unregistered.
+const premiumLikely = (label, tld) => label.length <= 2 && !["com", "net", "de"].includes(tld);
 const registrar = (d) => `https://porkbun.com/checkout/search?q=${encodeURIComponent(d)}`;
 
 const state = { stats: null, avail: null, sets: {}, bitmaps: {}, tld: null, len: 3, kind: "all", contains: "", shown: PAGE, list: [] };
@@ -77,7 +80,9 @@ async function search() {
   out.replaceChildren(...results.map(([tld, st]) => {
     const d = `${q}.${tld}`;
     const free = st === "free" || st === "free4" || st === "unv";
-    const inner = [el("span", { className: "d", textContent: d }), el("span", { className: `s ${CLS[st]}`, textContent: LABEL[st] })];
+    const tag = el("span", { className: `s ${CLS[st]}`, textContent: LABEL[st] });
+    if (free && premiumLikely(q, tld)) tag.append(el("span", { className: "p", textContent: " · premium?", title: "1–2 character names on new TLDs are often reserved or premium-priced" }));
+    const inner = [el("span", { className: "d", textContent: d }), tag];
     const li = el("li", { className: `chip ${free ? "free" : ""}` });
     if (free) li.append(el("a", { href: registrar(d), target: "_blank", rel: "noopener", title: `register ${d}`, style: "display:contents" }, ...inner));
     else li.append(...inner);
@@ -134,7 +139,7 @@ async function buildList() {
     const a = state.avail.tlds[tld];
     items = a.available.filter((s) => s.length === len && keep(s)).map((s) => [s, false]);
     items.push(...a.unverified.filter((s) => s.length === len && keep(s)).map((s) => [s, true]));
-    items.sort((x, y) => (x[0] < y[0] ? -1 : 1));
+    items.sort((x, y) => index(x[0]) - index(y[0])); // a-z, then 0-9, then hyphens
   } else {
     $("#count").textContent = "loading 4 character data…";
     const bm = await bitmap(tld);
@@ -155,7 +160,8 @@ async function buildList() {
 function renderList() {
   const { list, shown, tld, len } = state;
   const unv = list.filter((x) => x[1]).length;
-  $("#count").textContent = `${fmt(list.length)} free ${len} character .${tld} names` + (unv ? ` (${fmt(unv)} awaiting RDAP, marked ?)` : "") + (len === 4 ? " · DNS check only" : "");
+  $("#count").textContent = `${fmt(list.length)} free ${len} character .${tld} names` + (unv ? ` (${fmt(unv)} awaiting RDAP, marked ?)` : "") + (len === 4 ? " · DNS check only" : "") +
+    (premiumLikely("x".repeat(len), tld) && list.length ? " · often reserved or premium at this length" : "");
   $("#list").replaceChildren(...list.slice(0, shown).map(([s, u]) => {
     const d = `${s}.${tld}`;
     return el("li", { className: u ? "unv" : "" }, el("a", { href: registrar(d), target: "_blank", rel: "noopener", textContent: d }));
@@ -194,7 +200,8 @@ async function main() {
     seg("#f-tld", "tld", stats.order.map((t) => [t, `.${t}`]));
     seg("#f-len", "len", [[1, "1"], [2, "2"], [3, "3"], [4, "4"]]);
     seg("#f-kind", "kind", [["all", "all"], ["letters", "abc"], ["digits", "123"], ["mixed", "a1-"]]);
-    state.tld = stats.order.find((t) => stats.tlds[t][3].available) || stats.order[0];
+    const free3 = (t) => (stats.tlds[t][3].available || 0) + (stats.tlds[t][3].unverified || 0);
+    state.tld = stats.order.reduce((best, t) => (free3(t) > free3(best) ? t : best), stats.order[0]);
     setFilter("len", 3);
     renderFeeds(changes);
 

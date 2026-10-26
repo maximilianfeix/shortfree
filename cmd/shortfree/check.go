@@ -128,8 +128,18 @@ func splitDomain(d string) (label, tld string, ok bool) {
 }
 
 // validLabel accepts any LDH label up to 63 characters (IDN "xn--" included).
+// (names.Index cannot be used as a character check here: its base-37 value
+// overflows for labels longer than 12 characters.)
 func validLabel(s string) bool {
-	return s != "" && len(s) <= 63 && names.Index(s) >= 0 && s[0] != '-' && s[len(s)-1] != '-'
+	if s == "" || len(s) > 63 || s[0] == '-' || s[len(s)-1] == '-' {
+		return false
+	}
+	for _, c := range []byte(s) {
+		if strings.IndexByte(names.Alphabet, c) < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // check looks up one domain live: DNS at the TLD's own servers, then RDAP.

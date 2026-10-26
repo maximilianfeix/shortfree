@@ -80,6 +80,20 @@ func TestCheckBelowMinLen(t *testing.T) {
 	}
 }
 
+// Long labels used to be rejected at random: names.Index overflowed.
+func TestSplitDomainLongLabels(t *testing.T) {
+	for _, d := range []string{"sf-ci-dac349e53fb6270b.tools", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.com", "a.io"} {
+		if _, _, ok := splitDomain(d); !ok {
+			t.Errorf("splitDomain(%q) rejected", d)
+		}
+	}
+	for _, d := range []string{"a_b.io", "-a.io", strings.Repeat("a", 64) + ".io"} {
+		if _, _, ok := splitDomain(d); ok {
+			t.Errorf("splitDomain(%q) accepted", d)
+		}
+	}
+}
+
 func TestVerifyZeroBudgetSkipsTLD(t *testing.T) {
 	fakeRDAP(t, true)
 	st := &store.State{TLDs: map[string]map[string]*store.Entry{"test": {"q7": {DNS: "free"}}}}

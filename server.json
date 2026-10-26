@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.maximilianfeix/shortfree",
+  "title": "shortfree",
+  "description": "Live domain availability checks plus every free 1-4 character .com .net .de .ai .io .dev .app .tools",
+  "version": "0.1.0",
+  "websiteUrl": "https://maximilianfeix.github.io/shortfree/",
+  "repository": {
+    "url": "https://github.com/maximilianfeix/shortfree",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/maximilianfeix/shortfree:0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

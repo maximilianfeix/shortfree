@@ -5,6 +5,7 @@
 //	shortfree scan4                    4 chars: DNS sweep of one daily shard
 //	shortfree export                   write public data files and README tables
 //	shortfree merge <dir>...           combine parallel bootstrap outputs
+//	shortfree mcp                      MCP server (stdio) for AI assistants
 package main
 
 import (
@@ -41,6 +42,11 @@ func main() {
 		err = cmdExport(os.Args[2:])
 	case "merge":
 		err = cmdMerge(os.Args[2:])
+	case "mcp":
+		err = cmdMCP(ctx, os.Args[2:])
+	case "-v", "--version", "version":
+		fmt.Println("shortfree", appVersion())
+		return
 	case "-h", "--help", "help":
 		usage()
 		return
@@ -63,6 +69,8 @@ Usage:
   shortfree scan4 [flags]       sweep one shard of 4 character names
   shortfree export [flags]      write data/ files and README tables
   shortfree merge [flags] <dir>...  combine outputs of parallel bootstrap jobs
+  shortfree mcp                 MCP server on stdio: live check, search, suggestions
+  shortfree version             print the version
 
 Run "shortfree <command> -h" for flags.
 `)

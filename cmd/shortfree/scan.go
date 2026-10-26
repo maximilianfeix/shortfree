@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"text/tabwriter"
@@ -24,40 +23,14 @@ func cmdCheck(ctx context.Context, args []string) error {
 	if fs.NArg() == 0 {
 		return fmt.Errorf("usage: shortfree check <domain>...")
 	}
-	rc := rdap.New(0, userAgent)
-	probers := map[string]*probe.Prober{}
 	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(tw, "DOMAIN\tDNS\tRDAP\tVERDICT")
-	for _, d := range fs.Args() {
-		d = strings.TrimSuffix(strings.ToLower(d), ".")
-		label, tld, ok := strings.Cut(d, ".")
-		if !ok || strings.Contains(tld, ".") {
-			fmt.Fprintf(tw, "%s\t-\t-\tinvalid (want label.tld)\n", d)
-			continue
+	for _, r := range newChecker().checkAll(ctx, fs.Args()) {
+		verdict := r.Verdict
+		if r.DNS == "-" && r.Error != "" {
+			verdict = r.Error
 		}
-		p, ok := probers[tld]
-		if !ok {
-			var err error
-			if p, err = probe.New(ctx, tld, 20); err != nil {
-				fmt.Fprintf(tw, "%s\t-\t-\t%v\n", d, err)
-				continue
-			}
-			probers[tld] = p
-		}
-		dns := p.Check(ctx, label)
-		r := "-"
-		verdict := "taken"
-		if _, known := rdap.Endpoints[tld]; known {
-			info, err := rc.Lookup(ctx, label, tld)
-			r = string(info.Status)
-			if err != nil {
-				r = "error"
-			}
-			verdict = verdictOf(dns, info.Status)
-		} else if dns == probe.Free {
-			verdict = "probably free (no RDAP for this TLD)"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d, dns, r, verdict)
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", r.Domain, r.DNS, r.RDAP, verdict)
 	}
 	return tw.Flush()
 }

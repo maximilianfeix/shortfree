@@ -100,7 +100,7 @@ jobs:
           cp bitmaps/*.bin _site/data/4/
           touch _site/.nojekyll
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

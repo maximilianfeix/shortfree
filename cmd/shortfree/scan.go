@@ -72,8 +72,10 @@ func verdictOf(dns probe.Result, r rdap.Status) string {
 		return "taken"
 	case dns == probe.Free:
 		return "probably free (RDAP failed)"
+	case dns == probe.Taken:
+		return "taken"
 	}
-	return "taken"
+	return "unknown (DNS and RDAP failed)"
 }
 
 // sweep runs check for every label on prober p with the given number of
@@ -190,7 +192,8 @@ func cmdScan(ctx context.Context, args []string) error {
 
 // verify confirms not-delegated names via RDAP. Never-checked names come
 // first, then dropping names, then the stalest checks; each registry host gets
-// its own budget and runs in parallel with the others.
+// its own time budget, enforced by a deadline, and runs in parallel with the
+// others.
 func verify(ctx context.Context, st *store.State, tlds []string, rps float64, budget time.Duration, recheck time.Duration, now time.Time) {
 	type job struct {
 		tld, label string
@@ -243,6 +246,10 @@ func verify(ctx context.Context, st *store.State, tlds []string, rps float64, bu
 		wg.Add(1)
 		go func(host string, jobs []job) {
 			defer wg.Done()
+			// Slow or failing registries make lookups retry, so the job count
+			// alone does not bound the run time.
+			hctx, cancel := context.WithTimeout(ctx, budget)
+			defer cancel()
 			counts := map[rdap.Status]int{}
 			// Two requests in flight per host keep the limiter busy while
 			// one request waits on the network.
@@ -253,7 +260,10 @@ func verify(ctx context.Context, st *store.State, tlds []string, rps float64, bu
 				go func() {
 					defer inner.Done()
 					for j := range ch {
-						info, err := rc.Lookup(ctx, j.label, j.tld)
+						info, err := rc.Lookup(hctx, j.label, j.tld)
+						if hctx.Err() != nil {
+							continue // cut off by the deadline: keep the old result
+						}
 						mu.Lock()
 						counts[info.Status]++
 						if err == nil || j.e.RDAP == "" {
@@ -268,11 +278,13 @@ func verify(ctx context.Context, st *store.State, tlds []string, rps float64, bu
 					}
 				}()
 			}
+		dispatch:
 			for _, j := range jobs {
-				if ctx.Err() != nil {
-					break
+				select {
+				case ch <- j:
+				case <-hctx.Done():
+					break dispatch
 				}
-				ch <- j
 			}
 			close(ch)
 			inner.Wait()

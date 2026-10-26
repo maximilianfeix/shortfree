@@ -46,8 +46,16 @@ jobs:
       - name: Restore state from the data release
         run: |
           mkdir -p state bitmaps
-          gh release download data -p 'state.json.gz' -D state || echo "no state yet"
-          gh release download data -p '*.bin' -D bitmaps || echo "no bitmaps yet"
+          # Only a missing release means "first run". Any other failure must
+          # stop the job, or the upload below would overwrite good state.
+          if out=$(gh release view data 2>&1); then
+            gh release download data -p 'state.json.gz' -D state
+            gh release download data -p '*.bin' -D bitmaps
+          elif grep -qi "not found" <<<"$out"; then
+            echo "no data release yet, starting from scratch"
+          else
+            echo "$out"; exit 1
+          fi
           ls -la state bitmaps
 
       - name: Sweep 4 character shard

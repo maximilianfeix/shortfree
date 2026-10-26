@@ -124,12 +124,26 @@ const (
 	Error      Status = "error"      // no definitive answer
 )
 
+// Lifecycle phases of a Dropping name, from its EPP status.
+const (
+	PhaseRedemption    = "redemption"     // redemption period: the old owner can still restore it
+	PhasePendingDelete = "pending_delete" // pending delete: restore no longer possible
+)
+
 // Info is the result of one lookup.
 type Info struct {
-	Status  Status    `json:"status"`
-	EPP     []string  `json:"epp,omitempty"`
+	Status Status   `json:"status"`
+	EPP    []string `json:"epp,omitempty"`
+	// Expires is the RDAP "expiration" event. It is not a drop date: names
+	// are usually renewed or deleted on registry-specific schedules.
 	Expires time.Time `json:"expires,omitempty"`
+	Phase   string    `json:"phase,omitempty"` // Dropping only, see PhaseRedemption
 }
+
+// ErrBadResponse means the registry answered, but not with something that
+// looks like RDAP (an HTML error page, malformed JSON, another object).
+// Such answers must never count as "available" or "registered".
+var ErrBadResponse = errors.New("not an RDAP domain response")
 
 // Client looks up domains with one rate limiter per RDAP host.
 type Client struct {
@@ -221,8 +235,10 @@ func (c *Client) Rate(host string) float64 {
 }
 
 type response struct {
-	Status []string `json:"status"`
-	Events []struct {
+	ObjectClass string   `json:"objectClassName"`
+	LDHName     string   `json:"ldhName"`
+	Status      []string `json:"status"`
+	Events      []struct {
 		Action string `json:"eventAction"`
 		Date   string `json:"eventDate"`
 	} `json:"events"`
@@ -258,11 +274,20 @@ func (c *Client) Lookup(ctx context.Context, label, tld string) (Info, error) {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		resp.Body.Close()
 
+		html := strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "html")
 		switch {
+		case (resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusOK) && html:
+			// A web server's error or landing page (moved endpoint, CDN
+			// interstitial), not the registry's RDAP service.
+			return Info{Status: Error}, fmt.Errorf("%s: HTTP %d with an HTML body: %w", target, resp.StatusCode, ErrBadResponse)
 		case resp.StatusCode == http.StatusNotFound:
 			return Info{Status: Available}, nil
 		case resp.StatusCode == http.StatusOK:
-			return parse(body), nil
+			info, err := parse(body, label+"."+tld)
+			if err != nil {
+				return Info{Status: Error}, fmt.Errorf("%s: %w", target, err)
+			}
+			return info, nil
 		case resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500:
 			lastErr = fmt.Errorf("%s: HTTP %d", target, resp.StatusCode)
 			wait := time.Duration(2<<attempt) * time.Second
@@ -283,16 +308,28 @@ func (c *Client) Lookup(ctx context.Context, label, tld string) (Info, error) {
 	return Info{Status: Error}, lastErr
 }
 
-func parse(body []byte) Info {
+// parse reads a 200 answer for domain. A body that is not a JSON object, or
+// that names another object class or another domain, is an error: it says
+// nothing about domain's registration.
+func parse(body []byte, domain string) (Info, error) {
 	var r response
 	if err := json.Unmarshal(body, &r); err != nil {
-		return Info{Status: Registered}
+		return Info{Status: Error}, fmt.Errorf("%w: %v", ErrBadResponse, err)
+	}
+	if r.ObjectClass != "" && !strings.EqualFold(r.ObjectClass, "domain") {
+		return Info{Status: Error}, fmt.Errorf("%w: objectClassName %q", ErrBadResponse, r.ObjectClass)
+	}
+	if r.LDHName != "" && !strings.EqualFold(strings.TrimSuffix(r.LDHName, "."), domain) {
+		return Info{Status: Error}, fmt.Errorf("%w: ldhName %q, asked for %q", ErrBadResponse, r.LDHName, domain)
 	}
 	info := Info{Status: Registered, EPP: r.Status}
 	for _, s := range r.Status {
 		s = strings.ToLower(s)
-		if strings.Contains(s, "pending delete") || strings.Contains(s, "redemption") {
-			info.Status = Dropping
+		switch {
+		case strings.Contains(s, "pending delete"):
+			info.Status, info.Phase = Dropping, PhasePendingDelete
+		case strings.Contains(s, "redemption") && info.Phase == "":
+			info.Status, info.Phase = Dropping, PhaseRedemption
 		}
 	}
 	for _, e := range r.Events {
@@ -302,7 +339,7 @@ func parse(body []byte) Info {
 			}
 		}
 	}
-	return info
+	return info, nil
 }
 
 func sleep(ctx context.Context, d time.Duration) {

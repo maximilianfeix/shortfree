@@ -69,12 +69,12 @@ func TestCheckBelowMinLen(t *testing.T) {
 		"ab.so":   "not registrable (below the registry's minimum length of 3)",
 		"abc.ly":  "not registrable (below the registry's minimum length of 4)",
 		"bit.ly":  "taken", // grandfathered registrations stay taken
-		"abc.so":  "FREE",
-		"q7.dev":  "FREE",
-		"abcd.ly": "FREE",
+		"abc.so":  vNotRegistered,
+		"q7.dev":  vNotRegistered,
+		"abcd.ly": vNotRegistered,
 	} {
 		r := c.check(context.Background(), domain)
-		if r.Verdict != want || r.Free != (want == "FREE") {
+		if r.Verdict != want || r.Free != (want == vNotRegistered) {
 			t.Errorf("%s: verdict %q free %v, want %q", domain, r.Verdict, r.Free, want)
 		}
 	}

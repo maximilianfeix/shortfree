@@ -8,6 +8,11 @@ info:
     and served by GitHub Pages (`Access-Control-Allow-Origin: *`). No key.
     1-3 character names are verified against the registries' RDAP services.
     Every JSON file carries `updated`, the time of the scan it was built from.
+    "available" means not registered (RDAP 404, at most max_evidence_age_days
+    old), not that a registrar sells the name: reserved, premium and
+    restricted names also answer 404. Names without a DNS answer and 4
+    character shards never swept are "unknown", not taken (see coverage.json).
+    Scope: ASCII LDH labels only, no internationalized (xn--) names.
     Fields may be added within v1; existing fields are not renamed or removed.
   license:
     name: CC0-1.0
@@ -40,10 +45,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Stats" }
+  /coverage.json:
+    get:
+      operationId: getCoverage
+      summary: What the counts are based on, per TLD, length and 4 character shard
+      responses:
+        "200":
+          description: Coverage report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoverageReport" }
   /changes.json:
     get:
       operationId: getChanges
-      summary: Domains freed or taken in the last days, newest first
+      summary: Domains freed, newly listed or taken in the last days, newest first
       responses:
         "200":
           description: Change log
@@ -53,7 +68,7 @@ paths:
   /dropping.json:
     get:
       operationId: getDropping
-      summary: Registered 1-3 character names in redemption or pending delete, soonest expiry first
+      summary: Registered 1-3 character names in redemption or pending delete, pending delete first
       responses:
         "200":
           description: Dropping names on all TLDs
@@ -106,7 +121,7 @@ paths:
   /free.csv:
     get:
       operationId: getFreeCSV
-      summary: Every RDAP-verified free 1-3 character domain on all TLDs
+      summary: Every 1-3 character domain with current RDAP evidence of not being registered, on all TLDs
       responses:
         "200":
           description: CSV with header row; status is always `available`
@@ -136,7 +151,7 @@ components:
       description: TLD without dot
       schema:
         type: string
-        enum: [com, net, de, ai, io, dev, app, tools]
+        enum: [com, net, de, ai, io, dev, app, tools, co, org, xyz, so, to, cc, tv, fm, is, ly, run, inc]
   schemas:
     Index:
       type: object
@@ -146,10 +161,16 @@ components:
         version: { type: string, const: v1 }
         base_url: { type: string, format: uri }
         docs: { type: string, format: uri }
+        accuracy: { type: string, format: uri, description: Method, known false-positive classes, how to report }
         openapi: { type: string, format: uri }
         license: { type: string }
-        tlds: { type: array, items: { type: string } }
+        tlds: { type: array, items: { type: string }, description: TLDs with data (TLDs without any data are left out) }
         lengths: { type: array, items: { type: integer } }
+        max_evidence_age_days: { type: number, description: RDAP answers older than this are published as unverified (stale) }
+        statuses:
+          type: object
+          description: Definition of each status value
+          additionalProperties: { type: string }
         endpoints:
           type: array
           items:
@@ -164,10 +185,14 @@ components:
       description: Counts for one TLD and label length. Zero counts are omitted.
       required: [valid]
       properties:
-        available: { type: integer, description: RDAP-verified free }
+        available: { type: integer, description: "Not registered: RDAP 404 within max_evidence_age_days" }
         dropping: { type: integer, description: In redemption or pending delete }
-        unverified: { type: integer, description: Not in DNS, RDAP check pending }
+        unverified: { type: integer, description: Not in DNS, no current RDAP answer }
+        stale: { type: integer, description: Part of unverified whose last RDAP answer expired }
+        unknown: { type: integer, description: "No DNS answer at the last sweep (4 characters: in swept shards): not checked" }
         free: { type: integer, description: "4 characters only: not in the zone (DNS check)" }
+        unscanned: { type: integer, description: "4 characters only: names in shards never swept, neither free nor taken" }
+        missing: { type: boolean, description: "No data for this length at all: counts are unknown, not zero" }
         valid: { type: integer, description: Number of valid labels of this length }
     Stats:
       type: object
@@ -181,13 +206,74 @@ components:
           additionalProperties:
             type: object
             additionalProperties: { $ref: "#/components/schemas/LenStats" }
+        coverage:
+          type: object
+          description: TLD -> coverage (same as in coverage.json)
+          additionalProperties: { $ref: "#/components/schemas/TLDCoverage" }
+        missing: { type: array, items: { type: string }, description: TLDs without any data; left out of order and tlds }
+    ShardCoverage:
+      type: object
+      required: [shard, names, dns_unknown]
+      properties:
+        shard: { type: integer, description: First character index (a-z 0-9 -) mod shard count }
+        names: { type: integer }
+        scanned_at: { type: string, format: date-time, description: Omitted if the shard was never swept }
+        dns_unknown: { type: integer }
+    LenCoverage:
+      type: object
+      required: [valid, swept, dns_unknown, unscanned]
+      properties:
+        valid: { type: integer }
+        swept: { type: integer, description: Labels covered by the last DNS sweep (0 below the registry's minimum length) }
+        dns_unknown: { type: integer, description: Swept but without DNS answer }
+        unscanned: { type: integer, description: Registrable labels never swept }
+        rdap_verified: { type: integer }
+        rdap_pending: { type: integer }
+        rdap_stale: { type: integer }
+        oldest_check: { type: string, format: date-time, description: Oldest RDAP check behind a published available/dropping name }
+        median_age_days: { type: number }
+        shards: { type: array, items: { $ref: "#/components/schemas/ShardCoverage" }, description: 4 characters only }
+        missing: { type: boolean }
+    TLDCoverage:
+      type: object
+      required: [status, scanned_at, min_length, lengths]
+      properties:
+        status: { type: string, enum: [complete, partial, stale, held] }
+        scanned_at: { type: string, format: date-time, description: End of the last complete DNS sweep of 1-3 character names }
+        held: { type: string, description: Why the latest scan output was rejected and older data kept }
+        min_length: { type: integer }
+        lengths:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/LenCoverage" }
+    CoverageReport:
+      type: object
+      required: [updated, max_evidence_age_days, scope, method, order, tlds, missing]
+      properties:
+        updated: { type: string, format: date-time }
+        max_evidence_age_days: { type: number }
+        scope: { type: string }
+        method: { type: string }
+        source:
+          type: object
+          properties:
+            repository: { type: string }
+            commit: { type: string }
+            run: { type: string, format: uri }
+        order: { type: array, items: { type: string } }
+        tlds:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/TLDCoverage" }
+        missing: { type: array, items: { type: string } }
     Change:
       type: object
       required: [date, domain, event]
       properties:
         date: { type: string, format: date }
         domain: { type: string, examples: [q7.dev] }
-        event: { type: string, enum: [freed, taken] }
+        event:
+          type: string
+          enum: [freed, newly_listed, taken]
+          description: "freed: RDAP registered or dropping before, 404 now. newly_listed: newly available without an observed registration (e.g. first RDAP check). taken: delegated or registered now."
     Changes:
       type: object
       required: [updated, days, changes]
@@ -200,7 +286,10 @@ components:
       required: [name]
       properties:
         name: { type: string, description: Label without TLD }
-        expires: { type: string, format: date-time, description: Omitted if unknown }
+        expires: { type: string, format: date-time, deprecated: true, description: Same as rdap_expiration }
+        rdap_expiration: { type: string, format: date-time, description: "Registry expiration date from RDAP; not a drop date. Omitted if unknown" }
+        phase: { type: string, enum: [redemption, pending_delete] }
+        checked_at: { type: string, format: date-time }
     DroppingDomain:
       type: object
       required: [domain, tld, length]
@@ -208,7 +297,10 @@ components:
         domain: { type: string }
         tld: { type: string }
         length: { type: integer }
-        expires: { type: string, format: date-time, description: Omitted if unknown }
+        expires: { type: string, format: date-time, deprecated: true, description: Same as rdap_expiration }
+        rdap_expiration: { type: string, format: date-time, description: "Registry expiration date from RDAP; not a drop date. Omitted if unknown" }
+        phase: { type: string, enum: [redemption, pending_delete] }
+        checked_at: { type: string, format: date-time }
     DroppingList:
       type: object
       required: [updated, count, domains]
@@ -232,26 +324,39 @@ components:
         updated: { type: string, format: date-time }
         tld: { type: string }
         length: { type: integer, description: "Only in {tld}/{n}.json" }
+        max_evidence_age_days: { type: number }
+        oldest_check: { type: string, format: date-time, description: Oldest RDAP check behind a name in available }
         available:
           type: array
-          description: Labels (without TLD) the registry's RDAP service reports as not registered
+          description: "Labels (without TLD) the registry's RDAP service reported as not registered (404) within max_evidence_age_days. Registrability (reserved, premium) is not confirmed"
           items: { type: string }
         dropping:
           type: array
           items: { $ref: "#/components/schemas/DroppingName" }
         unverified:
           type: array
-          description: Labels not in DNS whose RDAP check is still pending
+          description: Labels not in DNS without a current RDAP answer (queued, failed or expired)
+          items: { type: string }
+        stale:
+          type: array
+          description: Part of unverified whose last RDAP answer is older than max_evidence_age_days
+          items: { type: string }
+        unknown:
+          type: array
+          description: Labels without DNS answer at the last sweep and without current RDAP answer; not checked, not taken
           items: { type: string }
     CSV:
       type: string
       description: |
         RFC 4180 CSV with the header
-        `domain,tld,length,kind,status,first_seen,checked_at`.
-        kind: letters | digits | mixed. status: available | dropping | unverified.
+        `domain,tld,length,kind,status,first_seen,checked_at,verification,evidence_age_days`.
+        kind: letters | digits | mixed. status: available | dropping | unverified | unknown.
         first_seen: YYYY-MM-DD (UTC), empty if unknown.
-        checked_at: ISO 8601 UTC timestamp of the last RDAP check, empty if none.
+        checked_at: ISO 8601 UTC timestamp of the last RDAP answer, empty if none.
+        verification: rdap_verified | stale | pending.
+        evidence_age_days: whole days between checked_at and the scan, empty if none.
+        Columns are only ever appended.
       examples:
         - |
-          domain,tld,length,kind,status,first_seen,checked_at
-          q7.dev,dev,2,mixed,available,2026-10-01,2026-10-25T03:41:12Z
+          domain,tld,length,kind,status,first_seen,checked_at,verification,evidence_age_days
+          q7.dev,dev,2,mixed,available,2026-10-01,2026-10-25T03:41:12Z,rdap_verified,1

@@ -17,13 +17,13 @@ inputs:
 
 outputs:
   free:
-    description: JSON array of the domains the registry confirmed as not registered, e.g. ["acme.dev"]. [] if none.
+    description: JSON array of the domains the registry reports as not registered (RDAP 404), e.g. ["acme.dev"]. [] if none. Not registered does not guarantee a registrar sells the name (reserved or premium names also answer 404).
     value: ${{ steps.check.outputs.free }}
   taken:
-    description: JSON array of the registered domains (verdict "taken" or "dropping soon").
+    description: JSON array of the registered domains (registration "registered" or "dropping").
     value: ${{ steps.check.outputs.taken }}
   results:
-    description: JSON array with one object per domain (domain, dns, rdap, verdict, free, premium_likely, expires, epp_status, error), as printed by "shortfree check -json".
+    description: JSON array with one object per domain (domain, dns, rdap, verdict, registration, registrable, free, premium_likely, expires, phase, epp_status, error), as printed by "shortfree check -json".
     value: ${{ steps.check.outputs.results }}
 
 runs:
@@ -66,7 +66,7 @@ runs:
         "$RUNNER_TEMP/shortfree$(go env GOEXE)" check -json "${list[@]}" > "$out"
 
         free=$(jq -c '[.[] | select(.free) | .domain]' "$out")
-        taken=$(jq -c '[.[] | select(.verdict == "taken" or .verdict == "dropping soon") | .domain]' "$out")
+        taken=$(jq -c '[.[] | select(.registration == "registered" or .registration == "dropping") | .domain]' "$out")
         {
           echo "free=$free"
           echo "taken=$taken"
@@ -76,11 +76,11 @@ runs:
         {
           echo "### shortfree domain watch"
           echo
-          echo "| Domain | Verdict | DNS | RDAP | Expires |"
+          echo "| Domain | Verdict | DNS | RDAP | RDAP expiration |"
           echo "|---|---|---|---|---|"
-          jq -r '.[] | "| `\(.domain)` | \(if .free then "**FREE**" else .verdict end)\(if .premium_likely then " (likely premium)" else "" end) | \(.dns) | \(.rdap) | \(.expires // "" | .[:10]) |"' "$out"
+          jq -r '.[] | "| `\(.domain)` | \(if .free then "**\(.verdict)**" else .verdict end)\(if .premium_likely then " (likely premium)" else "" end) | \(.dns) | \(.rdap) | \(.expires // "" | .[:10]) |"' "$out"
           echo
-          echo "Checked $(date -u '+%Y-%m-%d %H:%M UTC') at the registries' name servers and RDAP services."
+          echo "Checked $(date -u '+%Y-%m-%d %H:%M UTC') at the registries' name servers and RDAP services. Not registered means no registration exists; the registrar decides whether and at what price a name can be bought."
         } >> "$GITHUB_STEP_SUMMARY"
 
         jq -r '.[] | select(.verdict | startswith("invalid") or startswith("unknown") or . == "error") | "::warning::\(.domain): \(.verdict) \(.error // "")"' "$out"

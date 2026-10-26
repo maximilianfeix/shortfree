@@ -30,7 +30,7 @@ func appVersion() string {
 // mcpInstructions is built from DefaultTLDs so it never lists stale TLDs.
 var mcpInstructions = `shortfree knows every unregistered 1-4 character domain on ` + dotTLDs() + ` (rescanned daily) and can check any domain live.
 
-Workflow: use find_free_domains or suggest_domains to discover names from the daily snapshot, then confirm the ones the user cares about with check_domains (live DNS + registry RDAP) before calling them free. Statuses: rdap_verified = the registry's RDAP said "not registered" at the last scan; unverified = not in DNS, RDAP check still pending; dns_only = 4 character name not in DNS (never RDAP-checked, may be registered without name servers); dropping = registered but in redemption/pending delete. premium_likely = 1-2 character name outside .com/.net/.de, usually reserved or premium-priced by the registry even when RDAP says available. Final price and availability are always decided by the registrar.`
+Workflow: use find_free_domains or suggest_domains to discover names from the daily snapshot, then confirm the ones the user cares about with check_domains (live DNS + registry RDAP) before calling them unregistered. Statuses: rdap_verified = the registry's RDAP answered 404 (not registered) within the last 14 days; unverified = not in DNS, no current RDAP answer (queued, failed, or older than 14 days: stale); dns_only = 4 character name not in DNS (never RDAP-checked, may be registered without name servers); dropping = registered but in redemption/pending delete (the RDAP expiration date is not a drop date). Not registered is not the same as registrable: registries also answer 404 for reserved, premium and restricted names, and shortfree never asks a registrar (check_domains reports registrable: unconfirmed). premium_likely = 1-2 character name outside .com/.net/.de, usually reserved or premium-priced. Scope: ASCII labels (a-z, 0-9, hyphen) only; internationalized (IDN, xn--) names are not covered. Final price and availability are always decided by the registrar.`
 
 // mcpServer holds the shared state of all tools.
 type mcpServer struct {
@@ -72,10 +72,12 @@ func (s *mcpServer) server() *mcp.Server {
 		Description: `Live availability check for up to 50 domains (any length, any TLD, e.g. "q7.tools", "acme.io"). ` +
 			`For each domain it asks the TLD's own authoritative name servers (NS query, no resolver cache) and the registry's RDAP service, ` +
 			`so the answer is current to the second, unlike the daily snapshot used by find_free_domains. ` +
-			`Returns per domain: dns (free|taken|unknown), rdap (available|registered|dropping|error, "-" if the TLD has no RDAP endpoint in shortfree), ` +
-			`verdict ("FREE" = registry confirms not registered; "taken"; "dropping soon"; "probably free (...)" when only DNS answered), ` +
-			`free (true only for FREE) and premium_likely (1-2 character names outside .com/.net/.de, which registries usually reserve or sell at premium prices although RDAP reports them as unregistered). ` +
-			`RDAP works for every TLD in the snapshot (` + dotTLDs() + `); other TLDs get a DNS-only verdict. Names shorter than a registry's minimum length are reported as not registrable. Use this before telling a user a domain is free. Takes about 1 s per domain (rate-limited per registry).`,
+			`Returns per domain: dns (free|taken|unknown), rdap (available = 404|registered|dropping|error, "-" if the TLD has no RDAP endpoint in shortfree), ` +
+			`verdict ("not registered (RDAP 404)"; "taken"; "dropping (redemption or pending delete)"; "not in DNS (...)" when only DNS answered), ` +
+			`registration (not_registered|registered|dropping|not_delegated|unknown|invalid), registrable (no|unconfirmed: RDAP cannot see registry reservations, premium prices or eligibility rules, so a not registered name is never confirmed as buyable), ` +
+			`free (true only for registration not_registered) and premium_likely (1-2 character names outside .com/.net/.de, which registries usually reserve or sell at premium prices although RDAP reports them as unregistered). ` +
+			`RDAP works for every TLD in the snapshot (` + dotTLDs() + `); other TLDs get a DNS-only verdict. Names shorter than a registry's minimum length are reported as not registrable. ` +
+			`Only ASCII names (a-z, 0-9, hyphen) are supported: internationalized names and xn-- labels are rejected as invalid. Use this before telling a user a domain is unregistered. Takes about 1 s per domain (rate-limited per registry).`,
 		Annotations: readOnly("Check domains live"),
 	}, s.checkDomains)
 
@@ -83,8 +85,9 @@ func (s *mcpServer) server() *mcp.Server {
 		Name: "find_free_domains",
 		Description: `Search the daily snapshot of unregistered 1-4 character domains on ` + dotTLDs() + `. ` +
 			`Filters: tld (one or comma-separated, default all), length (1-4, default all, shortest first), kind (letters|digits|mixed|any), contains, starts_with, include_dropping. ` +
-			`Each result has a status: rdap_verified (1-3 chars, registry RDAP said not registered at the last scan), unverified (1-3 chars, not in DNS, RDAP pending), ` +
-			`dns_only (4 chars: not in the zone, never RDAP-checked; may be registered without name servers) or dropping (registered, in redemption/pending delete, with expiry; only with include_dropping). ` +
+			`Each result has a status: rdap_verified (1-3 chars, registry RDAP answered 404 = not registered within the last 14 days; registrability not confirmed), unverified (1-3 chars, not in DNS, no current RDAP answer; stale=true when the last answer expired), ` +
+			`dns_only (4 chars: not in the zone, never RDAP-checked; may be registered without name servers) or dropping (registered, in redemption/pending delete, with phase and RDAP expiration date, which is not a drop date; only with include_dropping). ` +
+			`contains and starts_with accept a-z, 0-9 and hyphen only (ASCII scope, no IDN). ` +
 			`Results are ordered by length, then status, then TLD (` + strings.Join(DefaultTLDs, " ") + `), then a-z before 0-9. total_matches counts all hits even when limit (default 100, max 1000) cuts the list. ` +
 			`The snapshot is up to a day old: confirm picks with check_domains.`,
 		Annotations: readOnly("Find free short domains"),
@@ -104,8 +107,8 @@ func (s *mcpServer) server() *mcp.Server {
 
 	mcp.AddTool(srv, &mcp.Tool{
 		Name: "domain_stats",
-		Description: `Counts of free short domains per TLD and label length (1-4) from the latest daily scan: rdap_verified, unverified (DNS only, RDAP pending), ` +
-			`dropping (in redemption/pending delete), dns_only_4char (4 character names not in the zone) and valid_names (how many LDH labels of that length exist). ` +
+		Description: `Counts of short domains per TLD and label length (1-4) from the latest daily scan: rdap_verified (not registered per RDAP), unverified (not in DNS, no current RDAP answer; stale = part of it whose RDAP answer expired), ` +
+			`dropping (in redemption/pending delete), dns_only_4char (4 character names not in the zone), dns_unknown (no DNS answer: not checked), unscanned_4char (4 character names in shards never swept: not checked, not taken), valid_names (how many LDH labels of that length exist) and coverage (complete, partial, stale or held). ` +
 			`Use it to answer "how many 3 letter .io domains are left?" or to pick a TLD with the most free names before searching. Optional tld filter.`,
 		Annotations: readOnly("Free domain statistics"),
 	}, s.domainStats)
@@ -147,8 +150,10 @@ type findInput struct {
 type foundDomain struct {
 	Domain        string     `json:"domain"`
 	Status        string     `json:"status" jsonschema:"rdap_verified, unverified, dns_only or dropping"`
+	Stale         bool       `json:"stale,omitempty" jsonschema:"unverified only: the name was verified before, but that RDAP answer is too old to publish"`
 	PremiumLikely bool       `json:"premium_likely,omitempty"`
-	Expires       *time.Time `json:"expires,omitempty"`
+	Expires       *time.Time `json:"expires,omitempty" jsonschema:"dropping only: RDAP expiration date, not a drop date"`
+	Phase         string     `json:"phase,omitempty" jsonschema:"dropping only: redemption or pending_delete"`
 }
 
 type findOutput struct {
@@ -184,6 +189,11 @@ func (s *mcpServer) findFreeDomains(ctx context.Context, _ *mcp.CallToolRequest,
 		return nil, out, fmt.Errorf("kind must be letters, digits, mixed or any")
 	}
 	contains, starts := strings.ToLower(in.Contains), strings.ToLower(in.StartsWith)
+	for _, f := range []struct{ name, v string }{{"contains", contains}, {"starts_with", starts}} {
+		if !ldhChars(f.v) {
+			return nil, out, fmt.Errorf("%s: use a-z, 0-9 and hyphens only (shortfree covers ASCII labels; internationalized names are out of scope)", f.name)
+		}
+	}
 	match := func(l string) bool {
 		return (kind == "" || names.Kind(l) == kind) && strings.Contains(l, contains) && strings.HasPrefix(l, starts)
 	}
@@ -245,25 +255,30 @@ func (s *mcpServer) findFreeDomains(ctx context.Context, _ *mcp.CallToolRequest,
 		var hits []hit
 		for ti, tld := range tlds {
 			l := snap.TLDs[tld]
-			add := func(label, status string, exp time.Time) {
+			add := func(label, status string, d *Dropping) {
 				if len(label) != n || !match(label) {
 					return
 				}
-				f := foundDomain{Domain: label + "." + tld, Status: status, PremiumLikely: premiumLikely(label, tld)}
-				if !exp.IsZero() {
-					f.Expires = &exp
+				f := foundDomain{Domain: label + "." + tld, Status: status, PremiumLikely: premiumLikely(label, tld), Stale: snap.stale[tld][label]}
+				if d != nil {
+					f.Phase = d.Phase
+					if exp := d.RDAPExpiration; !exp.IsZero() {
+						f.Expires = &exp
+					} else if exp := d.Expires; !exp.IsZero() {
+						f.Expires = &exp // data from before rdap_expiration existed
+					}
 				}
 				hits = append(hits, hit{f, statusRank(status), ti, names.Index(label)})
 			}
 			for _, x := range l.Available {
-				add(x, stVerified, time.Time{})
+				add(x, stVerified, nil)
 			}
 			for _, x := range l.Unverified {
-				add(x, stUnverified, time.Time{})
+				add(x, stUnverified, nil)
 			}
 			if in.IncludeDropping {
-				for _, d := range l.Dropping {
-					add(d.Name, stDropping, d.Expires)
+				for i := range l.Dropping {
+					add(l.Dropping[i].Name, stDropping, &l.Dropping[i])
 				}
 			}
 		}
@@ -416,17 +431,23 @@ type statsInput struct {
 }
 
 type lengthCounts struct {
-	RDAPVerified int `json:"rdap_verified"`
-	Unverified   int `json:"unverified"`
-	Dropping     int `json:"dropping"`
-	DNSOnly4     int `json:"dns_only_4char"`
-	ValidNames   int `json:"valid_names"`
+	RDAPVerified int  `json:"rdap_verified"`
+	Unverified   int  `json:"unverified"`
+	Stale        int  `json:"stale,omitempty"`
+	Dropping     int  `json:"dropping"`
+	DNSOnly4     int  `json:"dns_only_4char"`
+	DNSUnknown   int  `json:"dns_unknown,omitempty"`
+	Unscanned4   int  `json:"unscanned_4char,omitempty"`
+	NoData       bool `json:"no_data,omitempty" jsonschema:"no data for this length yet: counts are unknown, not zero"`
+	ValidNames   int  `json:"valid_names"`
 }
 
 type tldCounts struct {
-	TLD     string                  `json:"tld"`
-	Lengths map[string]lengthCounts `json:"lengths" jsonschema:"keyed by label length 1-4"`
-	Free    int                     `json:"free_total" jsonschema:"rdap_verified + unverified + dns_only_4char"`
+	TLD       string                  `json:"tld"`
+	Lengths   map[string]lengthCounts `json:"lengths" jsonschema:"keyed by label length 1-4"`
+	Free      int                     `json:"free_total" jsonschema:"rdap_verified + unverified + dns_only_4char"`
+	Coverage  string                  `json:"coverage,omitempty" jsonschema:"complete, partial (some names not checked), stale (latest scan failed, older data) or held (latest output rejected as implausible)"`
+	ScannedAt *time.Time              `json:"scanned_at,omitempty"`
 }
 
 type statsOutput struct {
@@ -466,12 +487,32 @@ func (s *mcpServer) domainStats(ctx context.Context, _ *mcp.CallToolRequest, in 
 			if l == nil {
 				continue
 			}
-			tc.Lengths[k] = lengthCounts{l.Available, l.Unverified, l.Dropping, l.Free, l.Valid}
+			lc := lengthCounts{RDAPVerified: l.Available, Unverified: l.Unverified, Stale: l.Stale, Dropping: l.Dropping, DNSOnly4: l.Free, NoData: l.Missing, ValidNames: l.Valid}
+			if k == "4" {
+				lc.Unscanned4 = l.Unscanned
+			}
+			lc.DNSUnknown = l.Unknown
+			tc.Lengths[k] = lc
 			tc.Free += l.Available + l.Unverified + l.Free
+		}
+		if c := st.Coverage[t]; c != nil {
+			tc.Coverage = c.Status
+			at := c.ScannedAt
+			tc.ScannedAt = &at
 		}
 		out.TLDs = append(out.TLDs, tc)
 	}
 	return nil, out, nil
+}
+
+// ldhChars reports whether s uses only a-z, 0-9 and hyphens (or is empty).
+func ldhChars(s string) bool {
+	for _, c := range []byte(s) {
+		if strings.IndexByte(names.Alphabet, c) < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // dotTLDs returns the scanned TLDs as ".com .net ...".

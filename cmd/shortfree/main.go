@@ -5,6 +5,7 @@
 //	shortfree scan4                    4 chars: DNS sweep of one daily shard
 //	shortfree export                   write public data files and README tables
 //	shortfree merge <dir>...           combine outputs of parallel scan jobs
+//	shortfree snapshot                 dated, immutable archive of the data + manifest
 //	shortfree tlds                     list the scanned TLDs (-json for CI)
 //	shortfree mcp                      MCP server (stdio) for AI assistants
 package main
@@ -49,6 +50,8 @@ func main() {
 		err = cmdPages(os.Args[2:])
 	case "merge":
 		err = cmdMerge(os.Args[2:])
+	case "snapshot":
+		err = cmdSnapshot(os.Args[2:])
 	case "tlds":
 		err = cmdTLDs(os.Stdout, os.Args[2:])
 	case "mcp":
@@ -79,6 +82,7 @@ Usage:
   shortfree export [flags]      write data/ files and README tables
   shortfree pages [flags]       write static TLD pages, sitemap.xml, robots.txt
   shortfree merge [flags] <dir>...  combine outputs of parallel scan jobs
+  shortfree snapshot [flags]    pack exported data into a dated archive + manifest.json
   shortfree tlds [-json]        list the scanned TLDs
   shortfree mcp                 MCP server on stdio: live check, search, suggestions
   shortfree version             print the version

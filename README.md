@@ -104,15 +104,17 @@ curl -s https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main
 
 shortfree does:
 
-- check every valid label (a–z, 0–9, inner hyphens) up to 4 characters: 49,284 names per TLD up to 3 characters and 1,774,224 more at 4 characters;
+- check every valid ASCII label (a–z, 0–9, inner hyphens) up to 4 characters: 49,284 names per TLD up to 3 characters and 1,774,224 more at 4 characters;
 - ask the TLD's authoritative name servers directly, without a resolver cache;
 - confirm each 1–3 character candidate in the registry's RDAP service (`404` = not registered);
-- list registered names in redemption or pending delete separately, with their expiry date;
+- list registered names in redemption or pending delete separately, with their phase and RDAP expiration date (which is not a drop date);
+- publish only RDAP answers younger than 14 days as verified, and say per TLD, length and shard what was covered ([coverage.json](docs/api.md#coverage), [accuracy](docs/accuracy.md));
 - publish everything as plain files under CC0, with no account, key or tracking.
 
 shortfree can't:
 
-- **see prices or reservations.** Registries reserve some names and sell others at premium prices. RDAP reports both as unregistered. This is common for 1–2 character names on most TLDs other than .com, .net and .de. Your registrar shows the real price.
+- **see prices or reservations.** "Not registered" (RDAP `404`) is not "registrable": registries reserve some names and sell others at premium prices, and RDAP reports both as unregistered. This is common for 1–2 character names on most TLDs other than .com, .net and .de. Your registrar shows the real price.
+- **cover internationalized names.** Only ASCII labels are enumerated and checked; IDNs (Unicode or `xn--` labels) are rejected by `check`.
 - **verify 4 character names via RDAP.** They are DNS-only. A registered name without name servers can appear in the 4 character lists. Run `shortfree check` on a name before you rely on it.
 - **be newer than the last scan.** The lists are a daily snapshot. A name can be registered minutes after the scan. `shortfree check` and the MCP tool `check_domains` ask the registry live.
 
@@ -176,12 +178,12 @@ shortfree check q7.tools x4k.app abc.de
 
 ```
 DOMAIN    DNS    RDAP        VERDICT
-q7.tools  free   available   FREE
+q7.tools  free   available   not registered (RDAP 404)
 x4k.app   taken  registered  taken
 abc.de    taken  registered  taken
 ```
 
-`check` works for domains of any length and TLD. For TLDs without RDAP support in shortfree it gives a DNS-only verdict (`probably free`). `-json` prints one object per domain:
+`check` works for ASCII domains of any length and TLD. For TLDs without RDAP support in shortfree it gives a DNS-only verdict (`not in DNS`). `-json` prints one object per domain, with `registration` (`not_registered`, `registered`, `dropping`, `not_delegated`, `unknown`) and `registrable` (`no` or `unconfirmed`: shortfree never asks a registrar) next to the verdict:
 
 ```sh
 shortfree check -json q7.tools | jq '.[0].verdict'

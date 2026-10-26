@@ -55,7 +55,10 @@ func cmdPages(args []string) error {
 	}
 	bms := map[string]store.Bitmap{}
 	for _, tld := range stats.Order {
-		bm, err := store.LoadBitmap(filepath.Join(*bitmaps, tld+".bin"), names.Space(4))
+		bm, err := store.ReadBitmap(filepath.Join(*bitmaps, tld+".bin"), names.Space(4))
+		if errors.Is(err, os.ErrNotExist) {
+			continue // no 4 character data: nil = unknown, not "none free"
+		}
 		if err != nil {
 			return err
 		}
@@ -639,10 +642,10 @@ const pageHTML = `<!doctype html>
     </section>
     {{- end}}
     <section class="section" aria-labelledby="drop-h">
-      <h2 id="drop-h">Dropping soon</h2>
-      <p class="note">Registered, but in redemption or pending delete at the last scan.</p>
+      <h2 id="drop-h">In redemption or pending delete</h2>
+      <p class="note">Registered, but in redemption or pending delete at the last scan. Not every such name is deleted, and the registry expiration date is not a drop date.</p>
       {{- if .Drops}}
-      <ul class="feed">{{range .Drops}}<li><span>{{.Name}}.{{$.TLD}}</span><span class="when"><span class="status" data-state="dropping">dropping</span>{{if not .Expires.IsZero}} exp {{.Expires.UTC.Format "2006-01-02"}}{{end}}</span></li>{{end}}</ul>
+      <ul class="feed">{{range .Drops}}<li><span>{{.Name}}.{{$.TLD}}</span><span class="when"><span class="status" data-state="dropping">dropping</span>{{if eq .Phase "pending_delete"}} pending delete{{else if eq .Phase "redemption"}} redemption{{end}}{{if not .Expires.IsZero}} · RDAP expiry {{.Expires.UTC.Format "2006-01-02"}}{{end}}</span></li>{{end}}</ul>
       {{- else}}
       <p class="msg">No short .{{.TLD}} names in redemption right now.</p>
       {{- end}}

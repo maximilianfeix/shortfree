@@ -10,31 +10,59 @@ https://maximilianfeix.github.io/shortfree/api/v1/
 - CORS: GitHub Pages sends `Access-Control-Allow-Origin: *`, so you can `fetch()` it from any web page.
 - Data license: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 - Machine-readable spec: [`openapi.yaml`](https://maximilianfeix.github.io/shortfree/api/openapi.yaml) (OpenAPI 3.1, source in [docs/openapi.yaml](openapi.yaml)).
-- `v1` stays backwards compatible: fields may be added, never renamed or removed.
+- `v1` stays backwards compatible: fields may be added, never renamed or removed. Deprecated fields stay until v2.
+- What the data does and does not prove: [accuracy.md](accuracy.md).
 
 ## Endpoints
 
 | Path | Content |
 |---|---|
 | [`index.json`](https://maximilianfeix.github.io/shortfree/api/v1/index.json) | update time, TLDs, endpoint list |
-| [`stats.json`](https://maximilianfeix.github.io/shortfree/api/v1/stats.json) | counts per TLD and length |
-| [`changes.json`](https://maximilianfeix.github.io/shortfree/api/v1/changes.json) | domains freed or taken in the last 30 days, newest first |
-| [`dropping.json`](https://maximilianfeix.github.io/shortfree/api/v1/dropping.json) | registered names in redemption / pending delete on all TLDs, soonest expiry first |
-| `{tld}.json`, e.g. [`dev.json`](https://maximilianfeix.github.io/shortfree/api/v1/dev.json) | 1–3 character names on one TLD: `available`, `dropping`, `unverified` |
+| [`stats.json`](https://maximilianfeix.github.io/shortfree/api/v1/stats.json) | counts per TLD and length, plus `coverage` and `missing` |
+| [`coverage.json`](https://maximilianfeix.github.io/shortfree/api/v1/coverage.json) | what the counts are based on: last sweep per TLD, names without DNS answer, unscanned 4 character shards, RDAP evidence age, held or missing TLDs |
+| [`changes.json`](https://maximilianfeix.github.io/shortfree/api/v1/changes.json) | domains freed, newly listed or taken in the last 30 days, newest first |
+| [`dropping.json`](https://maximilianfeix.github.io/shortfree/api/v1/dropping.json) | registered names in redemption / pending delete on all TLDs, pending delete first |
+| `{tld}.json`, e.g. [`dev.json`](https://maximilianfeix.github.io/shortfree/api/v1/dev.json) | 1–3 character names on one TLD: `available`, `dropping`, `unverified`, `stale`, `unknown` |
 | `{tld}/{n}.json`, e.g. [`io/3.json`](https://maximilianfeix.github.io/shortfree/api/v1/io/3.json) | the same, only labels of length `n` (1–3) |
-| [`free.csv`](https://maximilianfeix.github.io/shortfree/api/v1/free.csv) | every RDAP-verified free 1–3 character domain on all TLDs |
+| [`free.csv`](https://maximilianfeix.github.io/shortfree/api/v1/free.csv) | every 1–3 character domain with current RDAP evidence of not being registered, on all TLDs |
 | `{tld}.csv`, e.g. [`ai.csv`](https://maximilianfeix.github.io/shortfree/api/v1/ai.csv) | every listed 1–3 character name on one TLD, all statuses |
 | [`badge.json`](https://maximilianfeix.github.io/shortfree/api/v1/badge.json) | [shields.io endpoint badge](https://shields.io/badges/endpoint-badge) with the number of RDAP-verified free domains |
 
-The CSV files are also attached to the [`data` release](https://github.com/maximilianfeix/shortfree/releases/tag/data) as `short-all.csv` and `short-<tld>.csv`.
+The CSV files are also attached to the [`data` release](https://github.com/maximilianfeix/shortfree/releases/tag/data) as `short-all.csv` and `short-<tld>.csv`. For reproducible downloads use the [dated snapshots](#snapshots).
 
 ### Status values
 
 | Status | Meaning |
 |---|---|
-| `available` | not in the zone and the registry's RDAP service returns `404` |
-| `dropping` | registered, but in redemption period or pending delete; may become available soon |
-| `unverified` | not in the zone, RDAP check still queued |
+| `available` | **not registered**: not in the zone, and the registry's RDAP service answered `404` at most `max_evidence_age_days` (14) days before `updated`. This is registration evidence, not a promise that a registrar sells the name: reserved, premium and restricted names also answer `404` |
+| `dropping` | registered, in redemption period or pending delete (`phase`). `rdap_expiration` is the registry's expiration date, **not a drop date** |
+| `unverified` | not in the zone, but no current RDAP answer: check queued, failed, or the last answer is older than 14 days (those are also listed in `stale`) |
+| `stale` | subset of `unverified`: was RDAP-verified, but the evidence is too old to publish as verified |
+| `unknown` | no DNS answer at the last sweep and no current RDAP answer: **not checked**, neither free nor taken |
+
+Every `{tld}.json` also carries `max_evidence_age_days` and `oldest_check` (the oldest RDAP check behind a name in `available`). `index.json` has the same definitions under `statuses`.
+
+### Coverage
+
+A name missing from every list is registered **only if it was covered**. `coverage.json` (and `coverage` in `stats.json`) says per TLD:
+
+| Field | Meaning |
+|---|---|
+| `status` | `complete`; `partial` (some names got no DNS answer or some 4 character shards were never swept); `stale` (the latest scan of this TLD failed, older data is published); `held` (the latest output was rejected as implausible, older data is published, see `held`) |
+| `scanned_at` | end of the last complete DNS sweep of the 1–3 character names |
+| `lengths.<n>.swept`, `dns_unknown`, `unscanned` | labels covered by the last sweep, of those without a DNS answer, and labels never swept |
+| `lengths.<n>.rdap_verified`, `rdap_pending`, `rdap_stale`, `oldest_check`, `median_age_days` | RDAP evidence behind the 1–3 character lists |
+| `lengths.4.shards[]` | per 4 character shard (first character index mod 7): `names`, `scanned_at` (omitted if never swept), `dns_unknown` |
+
+In `stats.json`, `unscanned` (4 characters) counts names in shards never swept and `missing: true` means there is no data at all for that length: the count is unknown, not zero. TLDs without any data are listed in `missing` and left out of `order`.
+
+### Change events
+
+| `event` | Meaning |
+|---|---|
+| `freed` | the registry was seen holding the name (RDAP registered, or listed as dropping) and now answers `404` |
+| `newly_listed` | newly in `available` without an observed registration before, e.g. its first RDAP check or a name that was delegated in DNS before |
+| `taken` | was `available`, now delegated in DNS or registered in RDAP (a name that only fell back to `unverified`, `stale` or `unknown` is not reported) |
 
 ### Badge
 
@@ -47,8 +75,8 @@ The CSV files are also attached to the [`data` release](https://github.com/maxim
 ### CSV columns
 
 ```
-domain,tld,length,kind,status,first_seen,checked_at
-q7.dev,dev,2,mixed,available,2026-10-01,2026-10-25T03:41:12Z
+domain,tld,length,kind,status,first_seen,checked_at,verification,evidence_age_days
+q7.dev,dev,2,mixed,available,2026-10-01,2026-10-25T03:41:12Z,rdap_verified,1
 ```
 
 | Column | Meaning |
@@ -57,9 +85,13 @@ q7.dev,dev,2,mixed,available,2026-10-01,2026-10-25T03:41:12Z
 | `tld` | TLD without dot |
 | `length` | label length (1–3) |
 | `kind` | `letters`, `digits` or `mixed` (contains a hyphen or both letters and digits) |
-| `status` | `available`, `dropping` or `unverified` |
+| `status` | `available`, `dropping`, `unverified` or `unknown` |
 | `first_seen` | date (UTC, `YYYY-MM-DD`) the name was first seen missing from the zone; empty if unknown |
-| `checked_at` | time of the last RDAP check (UTC, ISO 8601); empty if not checked yet |
+| `checked_at` | time of the last RDAP answer (UTC, ISO 8601); empty if there is none |
+| `verification` | `rdap_verified` (current RDAP answer), `stale` (last answer older than 14 days) or `pending` (no answer yet, or the lookup failed) |
+| `evidence_age_days` | whole days between `checked_at` and the scan; empty if there is no answer |
+
+Columns are only ever appended, so readers that use the header keep working.
 
 ## Examples
 
@@ -74,12 +106,14 @@ curl -s $API/dev/2.json | jq -r '.available[] + ".dev"'
 # letters-only free 3 character .io names
 curl -s $API/io/3.json | jq -r '.available[] | select(test("^[a-z]+$")) + ".io"'
 
-# names dropping in the next 7 days
-curl -s $API/dropping.json | jq -r --arg d "$(date -u -d '+7 days' +%FT%TZ 2>/dev/null || date -u -v+7d +%FT%TZ)" \
-  '.domains[] | select(.expires != null and .expires < $d) | "\(.expires[:10])  \(.domain)"'
+# names in pending delete (the last phase before deletion; no date is promised)
+curl -s $API/dropping.json | jq -r '.domains[] | select(.phase == "pending_delete") | .domain'
 
-# freed today
+# freed today (the registry held them before)
 curl -s $API/changes.json | jq -r --arg t "$(date -u +%F)" '.changes[] | select(.date==$t and .event=="freed") | .domain'
+
+# TLDs whose data is not complete right now
+curl -s $API/coverage.json | jq -r '.tlds | to_entries[] | select(.value.status != "complete") | "\(.key) \(.value.status) \(.value.held // "")"'
 
 # count of free names per TLD and length
 curl -s $API/stats.json | jq -r '.order[] as $t | "\($t) \(.tlds[$t]["1"].available // 0) \(.tlds[$t]["2"].available // 0) \(.tlds[$t]["3"].available // 0)"'
@@ -119,8 +153,24 @@ const { available } = await (await fetch(api + "tools/2.json")).json();
 console.log(available.map((n) => n + ".tools"));
 ```
 
+## Snapshots
+
+The [`data` release](https://github.com/maximilianfeix/shortfree/releases/tag/data) gets one immutable archive per scan, `snapshot-YYYY-MM-DD.tar.gz` (the newest 30 are kept), and a `manifest.json` that is replaced last:
+
+```json
+{"schema":1,"name":"snapshot-2026-10-26","updated":"2026-10-26T03:17:00Z",
+ "archive":{"name":"snapshot-2026-10-26.tar.gz","size":123456,"sha256":"…"},
+ "files":[{"name":"verified-dev.txt","size":42,"sha256":"…"}, …],
+ "order":["com","net",…],"missing":[],"max_evidence_age_days":14,
+ "tlds":{"dev":{"rdap_verified":812,"dropping":3,"unverified":40,"stale":2,"dns_unknown":0,"four_dns_only":1500000,"four_unscanned":0,"coverage":"complete","scanned_at":"…","oldest_check":"…"}},
+ "source":{"repository":"maximilianfeix/shortfree","commit":"…","run":"…"}}
+```
+
+Read `manifest.json`, download the archive it names, check its SHA-256, extract it (everything is under `<name>/`) and check each file against `files`. The archive holds `verified-<tld>.txt`, `short-<tld>.csv`, `short-all.csv`, `changes.json`, `stats.json`, `coverage.json`, `available.json` and the 4 character bitmaps `<tld>.bin` with their shard coverage `<tld>.cov.json`. Because the archive is never replaced, you always get one complete run, even while the daily publish is uploading the next one.
+
 ## Caveats
 
-- **Free ≠ cheap.** Registries reserve some names or sell them at premium prices; RDAP does not expose that.
-- **Snapshots age.** Data is refreshed once a day (`updated` in every JSON file). A name can be registered minutes after the scan; check with `shortfree check <domain>` before you rely on it.
-- **4 character names** are not part of the API (1.8 million per TLD). Use the `four-<tld>.txt.gz` assets of the [data release](https://github.com/maximilianfeix/shortfree/releases/tag/data).
+- **Not registered ≠ registrable.** RDAP `404` means the registry has no registration. Registries also answer `404` for names they reserve, sell at premium prices or restrict; RDAP does not expose that. See [accuracy.md](accuracy.md).
+- **Evidence ages.** Data is refreshed once a day (`updated` in every JSON file), and an RDAP answer is published as verified for at most 14 days. A name can be registered minutes after the scan; check with `shortfree check <domain>` before you rely on it.
+- **ASCII only.** Labels of a–z, 0–9 and hyphens; internationalized (IDN, `xn--`) names are not covered.
+- **4 character names** are not part of the API (1.8 million per TLD). Use the `four-<tld>.txt.gz` assets or the bitmaps in the snapshots of the [data release](https://github.com/maximilianfeix/shortfree/releases/tag/data). They are DNS-checked only.

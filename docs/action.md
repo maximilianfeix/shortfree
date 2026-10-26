@@ -15,15 +15,17 @@ The action builds shortfree from its own source at the ref you use (`@main`, a t
 
 | Output | Example | |
 |---|---|---|
-| `free` | `["acme.dev"]` | JSON array of the domains whose verdict is `FREE`, i.e. the registry's RDAP service returned `404`. `[]` if none. |
-| `taken` | `["acme.io"]` | JSON array of the registered domains (verdict `taken` or `dropping soon`). |
-| `results` | `[{"domain":"acme.dev","dns":"free","rdap":"available","verdict":"FREE","free":true,"premium_likely":false}]` | One object per domain, the output of `shortfree check -json`. |
+| `free` | `["acme.dev"]` | JSON array of the domains the registry's RDAP service reports as not registered (`404`, `registration: not_registered`). `[]` if none. |
+| `taken` | `["acme.io"]` | JSON array of the registered domains (`registration` `registered` or `dropping`). |
+| `results` | `[{"domain":"acme.dev","dns":"free","rdap":"available","verdict":"not registered (RDAP 404)","registration":"not_registered","registrable":"unconfirmed","free":true,"premium_likely":false}]` | One object per domain, the output of `shortfree check -json`. |
 
-The step summary shows a table with the verdict, DNS and RDAP status and, for dropping names, the expiry date. Invalid domains and failed lookups are reported as warnings and are in neither `free` nor `taken`.
+The step summary shows a table with the verdict, DNS and RDAP status and, for dropping names, the RDAP expiration date (not a drop date). Invalid domains and failed lookups are reported as warnings and are in neither `free` nor `taken`.
 
-`free` only contains names the registry confirmed. On TLDs without RDAP support in shortfree (anything not listed in [tlds.md](tlds.md)) the verdict is at best `probably free (no RDAP for this TLD)`, which you find in `results`.
+`free` only contains names the registry reported as not registered. On TLDs without RDAP support in shortfree (anything not listed in [tlds.md](tlds.md)) the verdict is at best `not in DNS (no RDAP for this TLD)`, which you find in `results`. Internationalized names (IDN, `xn--`) are rejected as invalid.
 
-A free name can still be reserved or premium-priced; `premium_likely` is set for 1–2 character names outside .com, .net and .de. Names shorter than a registry's minimum length (e.g. 1–3 characters on .ly) get the verdict `not registrable (...)`. Check the price at your registrar.
+Earlier versions printed the verdicts `FREE`, `dropping soon` and `probably free (…)`; use the `free` and `registration` fields instead of matching verdict text.
+
+A name that is not registered can still be reserved or premium-priced (`registrable` is `unconfirmed`); `premium_likely` is set for 1–2 character names outside .com, .net and .de. Names shorter than a registry's minimum length (e.g. 1–3 characters on .ly) get the verdict `not registrable (...)`. Check the price at your registrar.
 
 ## Example: open an issue when a watched domain becomes free
 

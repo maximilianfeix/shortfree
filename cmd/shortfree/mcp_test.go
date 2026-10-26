@@ -27,7 +27,7 @@ func fakeData(t *testing.T) (*httptest.Server, map[string]*atomic.Int64) {
 	t.Helper()
 	avail := Available{Updated: testUpdated, TLDs: map[string]*TLDList{
 		"com": {Available: []string{"q7x", "zz9"}, Dropping: []Dropping{}, Unverified: []string{}},
-		"dev": {Available: []string{"q7", "dm", "dml", "abc", "x-1"}, Dropping: []Dropping{{"ab", testUpdated.AddDate(0, 0, 20)}}, Unverified: []string{"zq"}},
+		"dev": {Available: []string{"q7", "dm", "dml", "abc", "x-1"}, Dropping: []Dropping{{Name: "ab", Expires: testUpdated.AddDate(0, 0, 20), RDAPExpiration: testUpdated.AddDate(0, 0, 20), Phase: "redemption"}}, Unverified: []string{"zq"}},
 		"io":  {Available: []string{"dml", "q", "77"}, Dropping: []Dropping{}, Unverified: []string{"dmx"}},
 	}}
 	stats := Stats{Updated: testUpdated, Order: []string{"com", "dev", "io"}, TLDs: map[string]map[string]*LenStats{
@@ -114,15 +114,15 @@ func TestCheckDomains(t *testing.T) {
 		domain, dns, rdap, verdict string
 		free, premium              bool
 	}{
-		{"free.dev", "free", "available", "FREE", true, false},
-		{"q7.ai", "free", "available", "FREE", true, true},
+		{"free.dev", "free", "available", vNotRegistered, true, false},
+		{"q7.ai", "free", "available", vNotRegistered, true, true},
 		{"google.com", "taken", "registered", "taken", false, false},
-		{"gone.io", "free", "dropping", "dropping soon", false, false},
-		{"flaky.com", "free", "error", "probably free (RDAP failed)", false, false},
-		{"nordap.gg", "free", "-", "probably free (no RDAP for this TLD)", false, false},
+		{"gone.io", "free", "dropping", vDropping, false, false},
+		{"flaky.com", "free", "error", "not in DNS (RDAP failed)", false, false},
+		{"nordap.gg", "free", "-", "not in DNS (no RDAP for this TLD)", false, false},
 		{"broken.zz", "-", "-", "error", false, false},
-		{"a.b.c", "-", "-", "invalid (want label.tld)", false, false},
-		{"-x.dev", "-", "-", "invalid (want label.tld)", false, false},
+		{"a.b.c", "-", "-", "invalid (want label.tld with a-z, 0-9 and inner hyphens)", false, false},
+		{"-x.dev", "-", "-", "invalid (want label.tld with a-z, 0-9 and inner hyphens)", false, false},
 	}
 	if len(out.Results) != len(want) {
 		t.Fatalf("got %d results", len(out.Results))
@@ -341,7 +341,7 @@ func TestMCPRoundTrip(t *testing.T) {
 
 	res = call("check_domains", map[string]any{"domains": []string{"free.dev"}})
 	b, _ = json.Marshal(res.StructuredContent)
-	if !strings.Contains(string(b), `"verdict":"FREE"`) {
+	if !strings.Contains(string(b), `"verdict":"not registered (RDAP 404)"`) {
 		t.Errorf("check_domains = %s", b)
 	}
 

@@ -22,10 +22,10 @@ func TestWriteCheckJSON(t *testing.T) {
 		domain, verdict string
 		free            bool
 	}{
-		{"free.dev", "FREE", true},
+		{"free.dev", vNotRegistered, true},
 		{"taken.com", "taken", false},
-		{"gone.io", "dropping soon", false},
-		{"nope", "invalid (want label.tld)", false},
+		{"gone.io", vDropping, false},
+		{"nope", "invalid (want label.tld with a-z, 0-9 and inner hyphens)", false},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("got %d results, want %d", len(got), len(want))
@@ -58,7 +58,7 @@ func TestWriteCheckTable(t *testing.T) {
 	}
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	if len(lines) != 3 || !strings.HasPrefix(lines[0], "DOMAIN") ||
-		!strings.Contains(lines[1], "FREE") || !strings.Contains(lines[2], "taken") {
+		!strings.Contains(lines[1], vNotRegistered) || !strings.Contains(lines[2], "taken") {
 		t.Errorf("table:\n%s", buf.String())
 	}
 }

@@ -22,8 +22,8 @@ const defaultDataURL = "https://maximilianfeix.github.io/shortfree/data/"
 
 // Status of a name in the published snapshot.
 const (
-	stVerified   = "rdap_verified" // 1-3 chars, RDAP said not registered
-	stUnverified = "unverified"    // 1-3 chars, not in DNS, RDAP check pending
+	stVerified   = "rdap_verified" // 1-3 chars, current RDAP 404: not registered (registrability unconfirmed)
+	stUnverified = "unverified"    // 1-3 chars, not in DNS, no current RDAP answer
 	stDropping   = "dropping"      // registered, in redemption / pending delete
 	stDNSOnly    = "dns_only"      // 4 chars, not in DNS (never RDAP-checked)
 )
@@ -43,26 +43,28 @@ func statusRank(s string) int {
 // snapshot is available.json plus a lookup index built once per download.
 type snapshot struct {
 	*Available
-	status  map[string]map[string]string // tld -> label -> status
-	expires map[string]map[string]time.Time
+	status map[string]map[string]string // tld -> label -> status
+	stale  map[string]map[string]bool   // tld -> label -> RDAP evidence expired
 }
 
 func newSnapshot(a *Available) *snapshot {
-	s := &snapshot{Available: a, status: map[string]map[string]string{}, expires: map[string]map[string]time.Time{}}
+	s := &snapshot{Available: a, status: map[string]map[string]string{}, stale: map[string]map[string]bool{}}
 	for tld, l := range a.TLDs {
 		m := map[string]string{}
-		ex := map[string]time.Time{}
+		st := map[string]bool{}
 		for _, n := range l.Unverified {
 			m[n] = stUnverified
 		}
+		for _, n := range l.Stale {
+			st[n] = true
+		}
 		for _, d := range l.Dropping {
 			m[d.Name] = stDropping
-			ex[d.Name] = d.Expires
 		}
 		for _, n := range l.Available {
 			m[n] = stVerified
 		}
-		s.status[tld], s.expires[tld] = m, ex
+		s.status[tld], s.stale[tld] = m, st
 	}
 	return s
 }

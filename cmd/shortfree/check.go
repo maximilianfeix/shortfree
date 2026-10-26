@@ -49,13 +49,19 @@ func writeCheck(w io.Writer, results []checkResult, asJSON bool) error {
 // checkResult is the live status of one domain, shared by "shortfree check"
 // and the check_domains MCP tool.
 type checkResult struct {
-	Domain        string     `json:"domain"`
-	DNS           string     `json:"dns" jsonschema:"zone status at the TLD's authoritative name servers: free (NXDOMAIN), taken (delegated), unknown, or - if not checked"`
-	RDAP          string     `json:"rdap" jsonschema:"registry RDAP status: available (404), registered, dropping (redemption or pending delete), error, or - if the TLD has no RDAP endpoint here"`
-	Verdict       string     `json:"verdict" jsonschema:"FREE, taken, dropping soon, probably free (...), not registrable (...), unknown (...) or invalid (...)"`
-	Free          bool       `json:"free" jsonschema:"true only when the registry confirmed the name is not registered (verdict FREE)"`
-	PremiumLikely bool       `json:"premium_likely" jsonschema:"1-2 character name outside .com/.net/.de: often registry-reserved or premium-priced even when RDAP says available"`
-	Expires       *time.Time `json:"expires,omitempty" jsonschema:"expiration date from RDAP, mainly useful for dropping names"`
+	Domain  string `json:"domain"`
+	DNS     string `json:"dns" jsonschema:"zone status at the TLD's authoritative name servers: free (NXDOMAIN), taken (delegated), unknown, or - if not checked"`
+	RDAP    string `json:"rdap" jsonschema:"registry RDAP status: available (404 = no registration), registered, dropping (redemption or pending delete), error, or - if the TLD has no RDAP endpoint here"`
+	Verdict string `json:"verdict" jsonschema:"not registered (RDAP 404), taken, dropping (...), not in DNS (...), not registrable (...), unknown (...) or invalid (...)"`
+	// Registration and Registrable keep two questions apart: RDAP can prove
+	// that nobody holds a registration, never that a registrar will sell
+	// the name (reserved, premium or restricted names also answer 404).
+	Registration  string     `json:"registration" jsonschema:"registration evidence: not_registered (RDAP 404), registered (RDAP or DNS delegation), dropping (RDAP redemption or pending delete), not_delegated (not in DNS, no RDAP answer), unknown, or invalid"`
+	Registrable   string     `json:"registrable" jsonschema:"no (registered, dropping, below the registry's minimum length, or invalid) or unconfirmed: shortfree never asks a registrar, so registry reservations, premium prices and eligibility rules stay unknown even when the name is not registered"`
+	Free          bool       `json:"free" jsonschema:"true only when the registry's RDAP service answered 404 (registration: not_registered). It does not mean the name can be bought: see registrable"`
+	PremiumLikely bool       `json:"premium_likely" jsonschema:"1-2 character name outside .com/.net/.de: often registry-reserved or premium-priced even when RDAP says not registered"`
+	Expires       *time.Time `json:"expires,omitempty" jsonschema:"RDAP expiration date. Not a drop date: registries delete names on their own schedules"`
+	Phase         string     `json:"phase,omitempty" jsonschema:"dropping names only: redemption or pending_delete"`
 	EPP           []string   `json:"epp_status,omitempty" jsonschema:"raw EPP status values from RDAP"`
 	Error         string     `json:"error,omitempty"`
 }
@@ -127,9 +133,9 @@ func splitDomain(d string) (label, tld string, ok bool) {
 	return label, tld, true
 }
 
-// validLabel accepts any LDH label up to 63 characters (IDN "xn--" included).
-// (names.Index cannot be used as a character check here: its base-37 value
-// overflows for labels longer than 12 characters.)
+// validLabel accepts any ASCII LDH label up to 63 characters: a-z, 0-9 and
+// inner hyphens. (names.Index cannot be used as a character check here: its
+// base-37 value overflows for labels longer than 12 characters.)
 func validLabel(s string) bool {
 	if s == "" || len(s) > 63 || s[0] == '-' || s[len(s)-1] == '-' {
 		return false
@@ -142,16 +148,43 @@ func validLabel(s string) bool {
 	return true
 }
 
+// outOfScope explains why d is outside what shortfree covers, or returns "".
+// shortfree covers ASCII LDH labels only: internationalized names (Unicode
+// or their xn-- A-labels) need IDNA validation and registry-specific
+// language tables, which it does not implement. Labels with "--" at
+// positions 3-4 are reserved for such encodings (RFC 5891).
+func outOfScope(d string) string {
+	for _, r := range d {
+		if r > 0x7f {
+			return "invalid (internationalized domain names are not supported: shortfree checks ASCII labels of a-z, 0-9 and hyphens only)"
+		}
+	}
+	for _, part := range strings.Split(d, ".") {
+		if strings.HasPrefix(part, "xn--") {
+			return "invalid (IDN/punycode xn-- labels are not supported: shortfree checks ASCII labels of a-z, 0-9 and hyphens only)"
+		}
+		if len(part) >= 4 && part[2:4] == "--" {
+			return "invalid (hyphens at positions 3 and 4 are reserved for encoded labels such as xn--)"
+		}
+	}
+	return ""
+}
+
 // check looks up one domain live: DNS at the TLD's own servers, then RDAP.
 func (c *checker) check(ctx context.Context, raw string) checkResult {
 	d := normalizeDomain(raw)
-	r := checkResult{Domain: d, DNS: "-", RDAP: "-"}
+	r := checkResult{Domain: d, DNS: "-", RDAP: "-", Registration: "invalid", Registrable: "no"}
+	if why := outOfScope(d); why != "" {
+		r.Verdict = why
+		return r
+	}
 	label, tld, ok := splitDomain(d)
 	if !ok {
-		r.Verdict = "invalid (want label.tld)"
+		r.Verdict = "invalid (want label.tld with a-z, 0-9 and inner hyphens)"
 		return r
 	}
 	r.PremiumLikely = premiumLikely(label, tld)
+	r.Registration, r.Registrable = "unknown", "unconfirmed"
 	dns, err := c.dns(ctx, label, tld)
 	if err != nil {
 		r.Verdict = "error"
@@ -169,24 +202,33 @@ func (c *checker) check(ctx context.Context, raw string) checkResult {
 			info.Status = rdap.Error
 		}
 		r.Verdict = verdictOf(dns, info.Status)
+		r.Registration = registrationOf(dns, info.Status)
 		r.EPP = info.EPP
+		r.Phase = info.Phase
 		if !info.Expires.IsZero() {
 			t := info.Expires
 			r.Expires = &t
 		}
 	case dns == probe.Free:
-		r.Verdict = "probably free (no RDAP for this TLD)"
+		r.Verdict = "not in DNS (no RDAP for this TLD)"
+		r.Registration = "not_delegated"
 	case dns == probe.Taken:
-		r.Verdict = "taken"
+		r.Verdict = vTaken
+		r.Registration = "registered"
 	default:
 		r.Verdict = "unknown (DNS failed, no RDAP for this TLD)"
 	}
+	if r.Registration == "registered" || r.Registration == "dropping" {
+		r.Registrable = "no"
+	}
+	r.Free = r.Registration == "not_registered"
 	// Registries answer "not found" for names they would never accept, too.
 	// Registered short names (grandfathered) still show as taken.
-	if n := minLen(tld); len(label) < n && r.Verdict != "taken" && r.Verdict != "dropping soon" {
+	if n := minLen(tld); len(label) < n && r.Registrable != "no" {
 		r.Verdict = fmt.Sprintf("not registrable (below the registry's minimum length of %d)", n)
+		r.Registrable = "no"
+		r.Free = false
 	}
-	r.Free = r.Verdict == "FREE"
 	return r
 }
 

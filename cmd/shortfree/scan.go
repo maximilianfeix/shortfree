@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,20 +18,44 @@ import (
 	"github.com/maximilianfeix/shortfree/internal/tlds"
 )
 
+// Verdicts of a live check. An RDAP 404 proves only that the registry has no
+// registration for the name, not that a registrar will sell it: reserved,
+// premium and restricted names also answer 404.
+const (
+	vNotRegistered = "not registered (RDAP 404)"
+	vDropping      = "dropping (redemption or pending delete)"
+	vTaken         = "taken"
+)
+
 func verdictOf(dns probe.Result, r rdap.Status) string {
 	switch {
 	case r == rdap.Available:
-		return "FREE"
+		return vNotRegistered
 	case r == rdap.Dropping:
-		return "dropping soon"
+		return vDropping
 	case r == rdap.Registered:
-		return "taken"
+		return vTaken
 	case dns == probe.Free:
-		return "probably free (RDAP failed)"
+		return "not in DNS (RDAP failed)"
 	case dns == probe.Taken:
-		return "taken"
+		return vTaken
 	}
 	return "unknown (DNS and RDAP failed)"
+}
+
+// registrationOf is the registration evidence behind a verdict.
+func registrationOf(dns probe.Result, r rdap.Status) string {
+	switch {
+	case r == rdap.Available:
+		return "not_registered"
+	case r == rdap.Dropping:
+		return "dropping"
+	case r == rdap.Registered, dns == probe.Taken:
+		return "registered"
+	case dns == probe.Free:
+		return "not_delegated"
+	}
+	return "unknown"
 }
 
 // sweep runs check for every label on prober p with the given number of
@@ -108,33 +133,24 @@ func cmdScan(ctx context.Context, args []string) error {
 			sweep(ctx, p, labels, *workers, func(l string, r probe.Result) {
 				mu.Lock()
 				defer mu.Unlock()
-				m := st.TLD(tld)
+				sweepResult(st.TLD(tld), l, r, now)
 				switch r {
 				case probe.Taken:
 					taken++
-					delete(m, l)
 				case probe.Free:
 					free++
-					e, ok := m[l]
-					if !ok {
-						e = &store.Entry{Since: now.Unix()}
-						m[l] = e
-					}
-					if e.DNS != "free" {
-						e.RDAP = "" // state changed: verify again
-					}
-					e.DNS = "free"
 				default:
 					unknown++
-					if e, ok := m[l]; ok {
-						e.DNS = "unknown"
-					}
 				}
 			})
 			fmt.Fprintf(os.Stderr, "scan .%s done: %d not delegated, %d delegated, %d unknown\n", tld, free, taken, unknown)
 			if ctx.Err() != nil {
 				errs <- ctx.Err()
+				return
 			}
+			mu.Lock()
+			st.SetScan(tld, now)
+			mu.Unlock()
 		}(tld)
 	}
 	wg.Wait()
@@ -151,6 +167,34 @@ func cmdScan(ctx context.Context, args []string) error {
 	}
 	st.Updated = now
 	return st.Save(*statePath)
+}
+
+// sweepResult applies one DNS answer for label to a TLD's state entries.
+// Delegated names are dropped (registered). Names without a DNS answer are
+// kept with DNS "unknown", so the published data can say "not checked"
+// instead of silently treating them as taken. Earlier RDAP evidence is kept:
+// it expires by age (see statusOf), not by a DNS hiccup.
+func sweepResult(m map[string]*store.Entry, label string, r probe.Result, now time.Time) {
+	e, ok := m[label]
+	switch r {
+	case probe.Taken:
+		delete(m, label)
+	case probe.Free:
+		if !ok {
+			e = &store.Entry{}
+			m[label] = e
+		}
+		if e.Since == 0 {
+			e.Since = now.Unix()
+		}
+		e.DNS = "free"
+	default:
+		if !ok {
+			e = &store.Entry{}
+			m[label] = e
+		}
+		e.DNS = "unknown"
+	}
 }
 
 // shortLabels returns every label of length 1..maxLen that tld's registry
@@ -185,6 +229,11 @@ func keepTLDs(st *store.State, keep []string) {
 			delete(st.TLDs, tld)
 		}
 	}
+	for tld := range st.Scans {
+		if !contains(keep, tld) {
+			delete(st.Scans, tld)
+		}
+	}
 }
 
 // rdapBudgets returns the RDAP time budget per TLD: fresh for TLDs without
@@ -204,6 +253,10 @@ func rdapBudgets(st *store.State, scanned []string, normal, fresh time.Duration)
 // canary looks up a name known to be registered on tld. Unless the registry
 // confirms it, its 404s cannot be trusted (an endpoint that moved or answers
 // 404 for everything would mark every queued name as available).
+//
+// It also looks up a long random label that cannot be registered by anyone
+// (negative control): an endpoint that answers "registered" for everything
+// would otherwise remove every queued name from the lists.
 func canary(ctx context.Context, rc *rdap.Client, tld string) error {
 	label := tlds.Get(tld).Canary
 	cctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -215,7 +268,22 @@ func canary(ctx context.Context, rc *rdap.Client, tld string) error {
 	if info.Status != rdap.Registered && info.Status != rdap.Dropping {
 		return fmt.Errorf("canary %s.%s is %s, want registered: RDAP answers untrusted", label, tld, info.Status)
 	}
+	neg := negativeCanary()
+	info, err = rc.Lookup(cctx, neg, tld)
+	if err != nil {
+		return fmt.Errorf("negative canary %s.%s: %w", neg, tld, err)
+	}
+	if info.Status != rdap.Available {
+		return fmt.Errorf("negative canary %s.%s is %s, want not found: RDAP answers untrusted", neg, tld, info.Status)
+	}
 	return nil
+}
+
+// negativeCanary returns a random 28 character label nobody has registered.
+func negativeCanary() string {
+	var b [8]byte
+	rand.Read(b[:])
+	return fmt.Sprintf("sf-canary-%x", b)
 }
 
 // verify confirms not-delegated names via RDAP. Never-checked names come
@@ -255,37 +323,11 @@ func verify(ctx context.Context, st *store.State, scanned []string, rps float64,
 		hostBudget[host] = max(hostBudget[host], budgets[tld])
 		byHost[host] = append(byHost[host], jobs...)
 	}
-	rank := func(e *store.Entry) int {
-		switch e.RDAP {
-		case "":
-			return 0
-		case string(rdap.Dropping):
-			return 1
-		case string(rdap.Error):
-			return 2
-		}
-		return 3
-	}
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	for host, jobs := range byHost {
 		budget := hostBudget[host]
-		sort.Slice(jobs, func(i, j int) bool {
-			a, b := jobs[i], jobs[j]
-			if rank(a.e) != rank(b.e) {
-				return rank(a.e) < rank(b.e)
-			}
-			if len(a.label) != len(b.label) {
-				return len(a.label) < len(b.label)
-			}
-			if a.e.Checked != b.e.Checked {
-				return a.e.Checked < b.e.Checked
-			}
-			return a.tld+a.label < b.tld+b.label
-		})
-		if max := int(budget.Seconds() * rc.Rate(host)); len(jobs) > max {
-			jobs = jobs[:max]
-		}
+		jobs = prioritize(jobs, int(budget.Seconds()*rc.Rate(host)), func(j job) (*store.Entry, string, string) { return j.e, j.label, j.tld + "." + j.label })
 		fmt.Fprintf(os.Stderr, "rdap %s: %d lookups within %s at %.2f/s\n", host, len(jobs), budget, rc.Rate(host))
 		wg.Add(1)
 		go func(host string, jobs []job, budget time.Duration) {
@@ -311,12 +353,7 @@ func verify(ctx context.Context, st *store.State, scanned []string, rps float64,
 						mu.Lock()
 						counts[info.Status]++
 						if err == nil || j.e.RDAP == "" {
-							j.e.RDAP = string(info.Status)
-							j.e.Checked = now.Unix()
-							j.e.Expires = 0
-							if !info.Expires.IsZero() {
-								j.e.Expires = info.Expires.Unix()
-							}
+							applyRDAP(j.e, info, now)
 						}
 						mu.Unlock()
 					}
@@ -338,18 +375,102 @@ func verify(ctx context.Context, st *store.State, scanned []string, rps float64,
 	wg.Wait()
 }
 
+// applyRDAP stores a lookup result. A registered or dropping name that now
+// answers 404 records the time of that observed transition (Freed): only
+// such names are reported as "freed" in the change log.
+func applyRDAP(e *store.Entry, info rdap.Info, now time.Time) {
+	if info.Status == rdap.Available && (e.RDAP == string(rdap.Registered) || e.RDAP == string(rdap.Dropping)) {
+		e.Freed = now.Unix()
+	}
+	e.RDAP = string(info.Status)
+	e.Checked = now.Unix()
+	e.Expires = 0
+	if !info.Expires.IsZero() {
+		e.Expires = info.Expires.Unix()
+	}
+	e.Phase = info.Phase
+}
+
+// verifyRank orders RDAP work: new not-delegated names first, then dropping
+// names (their state changes fast), then failed lookups, then names without
+// a DNS answer, then rechecks of old evidence.
+func verifyRank(e *store.Entry) int {
+	switch {
+	case e.RDAP == "" && e.DNS == "free":
+		return 0
+	case e.RDAP == string(rdap.Dropping):
+		return 1
+	case e.RDAP == string(rdap.Error):
+		return 2
+	case e.RDAP == "":
+		return 3
+	}
+	return 4
+}
+
+// overdueShare is the part of a host's RDAP budget reserved for rechecks of
+// old evidence. Without it, a steady stream of new names would starve
+// rechecks and published evidence would only ever get older.
+const overdueShare = 0.25
+
+// prioritize sorts jobs by verifyRank (shortest labels, then oldest checks
+// first within a rank) and cuts them to max, keeping up to overdueShare of
+// max for rechecks (rank 4) when there are more jobs than max.
+func prioritize[J any](jobs []J, max int, key func(J) (e *store.Entry, label, id string)) []J {
+	sort.Slice(jobs, func(i, j int) bool {
+		a, la, ia := key(jobs[i])
+		b, lb, ib := key(jobs[j])
+		if verifyRank(a) != verifyRank(b) {
+			return verifyRank(a) < verifyRank(b)
+		}
+		if len(la) != len(lb) {
+			return len(la) < len(lb)
+		}
+		if a.Checked != b.Checked {
+			return a.Checked < b.Checked
+		}
+		return ia < ib
+	})
+	if max < 0 {
+		max = 0
+	}
+	if len(jobs) <= max {
+		return jobs
+	}
+	var first, overdue []J
+	for _, j := range jobs {
+		if e, _, _ := key(j); verifyRank(e) == 4 {
+			overdue = append(overdue, j)
+		} else {
+			first = append(first, j)
+		}
+	}
+	keep := min(len(overdue), int(float64(max)*overdueShare))
+	if n := max - len(first); n > keep {
+		keep = min(len(overdue), n) // spare budget beyond the reserve
+	}
+	out := append(first[:min(len(first), max-keep)], overdue[:keep]...)
+	return out
+}
+
 func cmdScan4(ctx context.Context, args []string) error {
 	fs := newFlags("scan4")
 	tlds := fs.String("tlds", "", "comma-separated TLDs (default: all supported)")
-	dir := fs.String("dir", "bitmaps", "directory with <tld>.bin free-bitmaps")
+	dir := fs.String("dir", "bitmaps", "directory with <tld>.bin free-bitmaps and their <tld>.cov.json shard coverage")
 	shards := fs.Int("shards", 7, "split the 4 character space into this many daily shards")
 	shard := fs.Int("shard", -1, "shard to scan (-1 = day of year mod shards)")
 	qps := fs.Int("qps", 400, "DNS queries per second per TLD")
 	workers := fs.Int("workers", 96, "concurrent DNS queries per TLD")
 	fs.Parse(args)
 
+	if *shards < 1 {
+		return fmt.Errorf("scan4: -shards must be at least 1")
+	}
 	if *shard < 0 {
 		*shard = time.Now().UTC().YearDay() % *shards
+	}
+	if *shard >= *shards {
+		return fmt.Errorf("scan4: -shard %d out of range 0-%d", *shard, *shards-1)
 	}
 	space := names.Space(4)
 	var wg sync.WaitGroup
@@ -363,6 +484,11 @@ func cmdScan4(ctx context.Context, args []string) error {
 			}
 			path := filepath.Join(*dir, tld+".bin")
 			bm, err := store.LoadBitmap(path, space)
+			if err != nil {
+				errs <- err
+				return
+			}
+			cov, err := store.LoadCoverage(store.CoveragePath(path), *shards)
 			if err != nil {
 				errs <- err
 				return
@@ -395,6 +521,12 @@ func cmdScan4(ctx context.Context, args []string) error {
 			}
 			fmt.Fprintf(os.Stderr, "scan4 .%s done: %d free in bitmap, %d unknown this run\n", tld, bm.Count(), unknown)
 			if err := store.WriteAtomic(path, bm); err != nil {
+				errs <- err
+				return
+			}
+			// Record the shard as swept only after the bitmap is saved.
+			cov.Record(*shard, *shards, &store.ShardScan{At: time.Now().UTC().Unix(), Names: len(labels), Unknown: unknown})
+			if err := cov.Save(store.CoveragePath(path)); err != nil {
 				errs <- err
 			}
 		}(tld)

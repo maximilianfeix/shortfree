@@ -25,7 +25,7 @@ jobs:
         run: |
           go run ./cmd/shortfree check google.com zqxv93kq7plm.com | tee out.txt
           grep -q "google.com.*taken" out.txt
-          grep -q "zqxv93kq7plm.com.*FREE" out.txt
+          grep -q "zqxv93kq7plm.com.*not registered (RDAP 404)" out.txt
       - name: Front end syntax
         run: node --check site/app.js
 
@@ -53,7 +53,7 @@ jobs:
           echo "free=$FREE taken=$TAKEN"
           jq -e --arg n "$NAME" '. == [$n]' <<< "$FREE"
           jq -e '. == ["google.com"]' <<< "$TAKEN"
-          jq -e --arg n "$NAME" 'length == 2 and .[0].verdict == "taken" and .[1].domain == $n and .[1].verdict == "FREE"' <<< "$RESULTS"
+          jq -e --arg n "$NAME" 'length == 2 and .[0].verdict == "taken" and .[0].registration == "registered" and .[1].domain == $n and .[1].registration == "not_registered" and .[1].registrable == "unconfirmed" and .[1].free' <<< "$RESULTS"
       - id: fail
         uses: ./
         continue-on-error: true

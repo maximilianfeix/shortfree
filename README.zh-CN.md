@@ -173,12 +173,12 @@ shortfree check q7.tools x4k.app abc.de
 
 ```
 DOMAIN    DNS    RDAP        VERDICT
-q7.tools  free   available   FREE
+q7.tools  free   available   not registered (RDAP 404)
 x4k.app   taken  registered  taken
 abc.de    taken  registered  taken
 ```
 
-`check` 适用于任意长度、任意后缀的域名。对于 shortfree 尚不支持 RDAP 的后缀，只给出基于 DNS 的结论（`probably free`）。加上 `-json` 后，每个域名输出一个对象：
+`check` 适用于任意长度、任意后缀的 ASCII 域名（不支持国际化域名 / `xn--`）。对于 shortfree 尚不支持 RDAP 的后缀，只给出基于 DNS 的结论（`not in DNS`）。“未注册”（RDAP `404`）不等于“可注册”：`registrable` 为 `unconfirmed`，因为保留名和溢价名在 RDAP 中不可见。加上 `-json` 后，每个域名输出一个对象：
 
 ```sh
 shortfree check -json q7.tools | jq '.[0].verdict'

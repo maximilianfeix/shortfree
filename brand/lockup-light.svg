@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="96" viewBox="0 0 480 96" role="img" aria-labelledby="title desc">
+<title id="title">shortfree</title>
+<desc id="desc">Horizontal mark and outlined wordmark for light backgrounds; transparent background.</desc>
+<g transform="translate(8 8) scale(0.15625)"><rect width="512" height="512" rx="112" fill="#0B0C0E"/><circle cx="160" cy="256" r="32" fill="#1FC16B"/><path d="M256 256H416V288H256Z" fill="#FAFAF7"/></g>
+<g transform="translate(112 16) scale(1)" fill="#0B0C0E" fill-rule="evenodd">
+  <path transform="translate(0 0)" d="M8 16H32V24H12Q8 24 8 28V32Q8 36 12 36H24Q32 36 32 44V56Q32 64 24 64H0V56H20Q24 56 24 52V48Q24 44 20 44H8Q0 44 0 36V24Q0 16 8 16Z"/>
+  <path transform="translate(40 0)" d="M0 0H8V16H24Q32 16 32 24V64H24V28Q24 24 20 24H8V64H0Z"/>
+  <path transform="translate(80 0)" d="M10 16H22Q32 16 32 26V54Q32 64 22 64H10Q0 64 0 54V26Q0 16 10 16ZM12 24Q8 24 8 28V52Q8 56 12 56H20Q24 56 24 52V28Q24 24 20 24Z"/>
+  <path transform="translate(120 0)" d="M0 16H8V20Q12 16 20 16H32V24H20Q8 24 8 36V64H0Z"/>
+  <path transform="translate(160 0)" d="M12 4H20V16H32V24H20V52Q20 56 24 56H32V64H24Q12 64 12 52V24H0V16H12Z"/>
+  <path transform="translate(200 0)" d="M8 12Q8 0 20 0H32V8H20Q16 8 16 12V16H32V24H16V64H8V24H0V16H8Z"/>
+  <path transform="translate(240 0)" d="M0 16H8V20Q12 16 20 16H32V24H20Q8 24 8 36V64H0Z"/>
+  <path transform="translate(280 0)" d="M8 16H24Q32 16 32 24V44H8V52Q8 56 12 56H32V64H8Q0 64 0 56V24Q0 16 8 16ZM8 28V36H24V28Q24 24 20 24H12Q8 24 8 28Z"/>
+  <path transform="translate(320 0)" d="M8 16H24Q32 16 32 24V44H8V52Q8 56 12 56H32V64H8Q0 64 0 56V24Q0 16 8 16ZM8 28V36H24V28Q24 24 20 24H12Q8 24 8 28Z"/>
+</g>
+</svg>

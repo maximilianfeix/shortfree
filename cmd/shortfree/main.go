@@ -40,6 +40,8 @@ func main() {
 		err = cmdScan4(ctx, os.Args[2:])
 	case "export":
 		err = cmdExport(os.Args[2:])
+	case "pages":
+		err = cmdPages(os.Args[2:])
 	case "merge":
 		err = cmdMerge(os.Args[2:])
 	case "mcp":
@@ -68,6 +70,7 @@ Usage:
   shortfree scan  [flags]       sweep 1-3 character names and verify via RDAP
   shortfree scan4 [flags]       sweep one shard of 4 character names
   shortfree export [flags]      write data/ files and README tables
+  shortfree pages [flags]       write static TLD pages, sitemap.xml, robots.txt
   shortfree merge [flags] <dir>...  combine outputs of parallel bootstrap jobs
   shortfree mcp                 MCP server on stdio: live check, search, suggestions
   shortfree version             print the version

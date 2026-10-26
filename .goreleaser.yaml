@@ -1,0 +1,46 @@
+version: 2
+
+project_name: shortfree
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - main: ./cmd/shortfree
+    binary: shortfree
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - docs/mcp.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^data:"
+      - "^build\\(deps\\)"
+
+release:
+  github:
+    owner: maximilianfeix
+    name: shortfree

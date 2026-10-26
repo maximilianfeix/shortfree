@@ -1,0 +1,86 @@
+name: docker
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths: ["Dockerfile", "go.mod", "go.sum", "cmd/**", "internal/**", ".github/workflows/docker.yml"]
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/maximilianfeix/shortfree
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: shortfree:test
+          build-args: VERSION=0.0.0-ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Registry label present
+        run: |
+          test "$(docker inspect shortfree:test --format '{{ index .Config.Labels "io.modelcontextprotocol.server.name" }}')" = "io.github.maximilianfeix/shortfree"
+      - name: MCP server over stdio lists its tools
+        timeout-minutes: 2
+        shell: python
+        run: |
+          import json, subprocess
+          p = subprocess.Popen(["docker", "run", "-i", "--rm", "shortfree:test"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+          def send(m):
+              p.stdin.write(json.dumps(m) + "\n"); p.stdin.flush()
+          send({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "ci", "version": "1"}}})
+          print(json.loads(p.stdout.readline())["result"]["serverInfo"])
+          send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+          send({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+          tools = sorted(t["name"] for t in json.loads(p.stdout.readline())["result"]["tools"])
+          print(tools)
+          assert tools == ["check_domains", "domain_stats", "find_free_domains", "suggest_domains"], tools
+          p.stdin.close(); p.wait(timeout=10)
+      - name: CLI inside the container
+        run: docker run --rm shortfree:test version
+
+  publish:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+          labels: |
+            io.modelcontextprotocol.server.name=io.github.maximilianfeix/shortfree
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ steps.meta.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha

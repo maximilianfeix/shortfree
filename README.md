@@ -1,62 +1,176 @@
+<!-- mcp-name: io.github.maximilianfeix/shortfree -->
+<p align="right"><b>English</b> · <a href="README.de.md">Deutsch</a> · <a href="README.zh-CN.md">简体中文</a></p>
+
 <p align="center">
   <a href="https://maximilianfeix.github.io/shortfree/">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="brand/banner-dark.svg">
-      <img src="brand/banner-light.svg" alt="shortfree – free 1–4 character domains, rescanned daily" width="800">
+      <img src="brand/banner-light.svg" alt="shortfree: every free 1–4 character domain, verified daily" width="800">
     </picture>
   </a>
 </p>
 
 <p align="center">
-  <a href="https://maximilianfeix.github.io/shortfree/"><b>Search the list →</b></a> ·
-  <a href="https://github.com/maximilianfeix/shortfree/releases/tag/data">Download all lists</a> ·
-  <a href="#how-it-works">How it works</a>
+  Every unregistered 1–4 character domain on <b>.com .net .de .ai .io .dev .app .tools</b>,<br>
+  checked at the registries' own name servers and RDAP services every day.
+</p>
+
+<p align="center">
+  <a href="https://maximilianfeix.github.io/shortfree/"><img src="https://img.shields.io/badge/Search_the_list-1FC16B?style=for-the-badge" alt="Search the list"></a>
+  <a href="#lists"><img src="https://img.shields.io/badge/Download_lists-0B0C0E?style=for-the-badge" alt="Download lists"></a>
+  <a href="#try-it"><img src="https://img.shields.io/badge/Install-0B0C0E?style=for-the-badge" alt="Install"></a>
+  <a href="#mcp"><img src="https://img.shields.io/badge/MCP-0B0C0E?style=for-the-badge" alt="MCP server"></a>
+  <a href="#api"><img src="https://img.shields.io/badge/API-0B0C0E?style=for-the-badge" alt="JSON and CSV API"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/maximilianfeix/shortfree/actions/workflows/scan.yml"><img src="https://github.com/maximilianfeix/shortfree/actions/workflows/scan.yml/badge.svg" alt="daily scan"></a>
   <a href="https://github.com/maximilianfeix/shortfree/actions/workflows/ci.yml"><img src="https://github.com/maximilianfeix/shortfree/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/code-MIT-315BEE" alt="MIT"></a>
-  <img src="https://img.shields.io/badge/data-CC0-69E0AA" alt="data CC0">
+  <a href="https://github.com/maximilianfeix/shortfree/releases"><img src="https://img.shields.io/github/v/release/maximilianfeix/shortfree?color=1FC16B" alt="latest release"></a>
+  <a href="https://pkg.go.dev/github.com/maximilianfeix/shortfree"><img src="https://pkg.go.dev/badge/github.com/maximilianfeix/shortfree.svg" alt="Go reference"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/maximilianfeix/shortfree?color=0B0C0E" alt="MIT license"></a>
+  <a href="https://maximilianfeix.github.io/shortfree/api/v1/badge.json"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fmaximilianfeix.github.io%2Fshortfree%2Fapi%2Fv1%2Fbadge.json" alt="number of RDAP-verified free short domains"></a>
 </p>
 
-**shortfree** lists every unregistered 1–4 character domain on **.com .net .de .ai .io .dev .app .tools**. A GitHub Action sweeps all ~14 million candidates against the registries' own name servers and confirms the short ones via RDAP every day, so the list never goes stale.
+<!-- demo -->
 
-- **Verified, not guessed.** 1–3 character names are confirmed by the registry's RDAP service (`404` = not registered), not by a third-party WHOIS mirror.
-- **Complete.** Every valid label: a–z, 0–9 and inner hyphens. 49,284 names per TLD up to 3 characters, 1.8 million more at 4.
-- **Dropping soon.** Registered names in redemption or pending delete are listed separately.
-- **Plain data.** JSON and text files in this repo and in the [data release](https://github.com/maximilianfeix/shortfree/releases/tag/data), CC0. No API key, no tracking.
+<p align="center">
+  <a href="#try-it">Try it</a> ·
+  <a href="#numbers">Numbers</a> ·
+  <a href="#lists">Lists</a> ·
+  <a href="#limits">Limits</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#mcp">MCP</a> ·
+  <a href="#api">API</a> ·
+  <a href="#cli">CLI</a> ·
+  <a href="#faq">FAQ</a> ·
+  <a href="#contributing">Contributing</a>
+</p>
 
+<a id="try-it"></a>
+## Try it
+
+**No install:** open [maximilianfeix.github.io/shortfree](https://maximilianfeix.github.io/shortfree/), type 1–4 characters and see the status on all eight TLDs. Filter the full list by TLD, length and characters.
+
+**Command line** (Go 1.27+):
+
+```sh
+go install github.com/maximilianfeix/shortfree/cmd/shortfree@latest
+shortfree check x7.dev acme.io
+```
+
+**Docker:**
+
+```sh
+docker run -i --rm ghcr.io/maximilianfeix/shortfree check x7.dev
+```
+
+**Claude Code** (MCP):
+
+```sh
+claude mcp add shortfree -- docker run -i --rm ghcr.io/maximilianfeix/shortfree
+```
+
+Binaries for Linux, macOS and Windows are attached to each [release](https://github.com/maximilianfeix/shortfree/releases).
+
+<a id="numbers"></a>
 ## Current numbers
 
 <!-- shortfree:start -->
 _The first scan has not run yet._
 <!-- shortfree:end -->
 
-## Use the data
+<a id="lists"></a>
+## Only want the lists?
+
+The companion repo [free-short-domains](https://github.com/maximilianfeix/free-short-domains) holds plain CSV and TXT files and is updated every day after the scan. Raw links:
 
 | File | Content |
 |---|---|
-| [`data/available.json`](data/available.json) | per TLD: `available` (RDAP-verified), `dropping` (with expiry), `unverified` (not in DNS, RDAP pending) for 1–3 characters |
-| [`data/txt/<tld>.txt`](data/txt) | verified free 1–3 character domains, one per line |
-| [`data/stats.json`](data/stats.json) | counts per TLD and length |
-| [`data/changes.json`](data/changes.json) | names freed or taken in the last 30 days |
-| [release `data`](https://github.com/maximilianfeix/shortfree/releases/tag/data) | `four-<tld>.txt.gz` (all 4 character names not in the zone), bitmaps, scanner state |
+| [`csv/all.csv`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/csv/all.csv) | every RDAP-verified free 1–3 character domain on all eight TLDs |
+| `csv/<tld>.csv`, e.g. [`csv/dev.csv`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/csv/dev.csv) | 1–3 character names with status `available`, `dropping` or `unverified` |
+| `txt/<tld>.txt`, e.g. [`txt/io.txt`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/txt/io.txt) | verified free 1–3 character domains, one per line |
+| `four-letter/<tld>.txt`, e.g. [`four-letter/com.txt`](https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/four-letter/com.txt) | 4-letter names (a–z) that are not in the zone |
+
+All 4 character names, digits and hyphens included, are in the [`data` release](https://github.com/maximilianfeix/shortfree/releases/tag/data) as `four-<tld>.txt.gz`. The same data is available as a [JSON/CSV API](#api). Everything is CC0: no attribution, no key.
 
 ```sh
 # every free 2 character .dev domain
-curl -s https://raw.githubusercontent.com/maximilianfeix/shortfree/main/data/available.json \
-  | jq -r '.tlds.dev.available[] | select(length==2) + ".dev"'
-
-# all free 4 letter .io names
-curl -sL https://github.com/maximilianfeix/shortfree/releases/download/data/four-io.txt.gz \
-  | gunzip | grep -E '^[a-z]{4}\.io$'
+curl -s https://raw.githubusercontent.com/maximilianfeix/free-short-domains/main/txt/dev.txt | awk 'length($0) == 6'
 ```
 
-## Check a domain yourself
+<a id="limits"></a>
+## What it does, and what it can't do
+
+shortfree does:
+
+- check every valid label (a–z, 0–9, inner hyphens) up to 4 characters: 49,284 names per TLD up to 3 characters and 1,774,224 more at 4 characters;
+- ask the TLD's authoritative name servers directly, without a resolver cache;
+- confirm each 1–3 character candidate in the registry's RDAP service (`404` = not registered);
+- list registered names in redemption or pending delete separately, with their expiry date;
+- publish everything as plain files under CC0, with no account, key or tracking.
+
+shortfree can't:
+
+- **see prices or reservations.** Registries reserve some names and sell others at premium prices. RDAP reports both as unregistered. This is common for 1–2 character names on .ai .io .dev .app .tools. Your registrar shows the real price.
+- **verify 4 character names via RDAP.** They are DNS-only. A registered name without name servers can appear in the 4 character lists. Run `shortfree check` on a name before you rely on it.
+- **be newer than the last scan.** The lists are a daily snapshot. A name can be registered minutes after the scan. `shortfree check` and the MCP tool `check_domains` ask the registry live.
+
+<a id="how-it-works"></a>
+## How it works
+
+1. **Sweep.** For every label, shortfree sends an `NS` query to the TLD's authoritative name servers. `NXDOMAIN` means the name is not in the zone. All 1–3 character names on eight TLDs are about 400,000 queries and take minutes.
+2. **Verify.** Not being in the zone is not the same as being free: names on hold, without name servers or in redemption are missing too. Each 1–3 character candidate is looked up in the registry's RDAP service (Verisign, DENIC, Identity Digital, Google Registry). `404` = not registered. `pending delete` or `redemption period` = dropping.
+3. **Repeat.** [`scan.yml`](.github/workflows/scan.yml) runs every day at 03:17 UTC. It sweeps all 1–3 character names and one of seven shards of the 4 character space, so each 4 character name is rechecked once a week. RDAP results are rechecked at least every 10 days. Never-checked names go first, then dropping names, then the oldest checks.
+
+Each RDAP host has its own rate limit (1.5–6 requests per second, see [`internal/rdap/rdap.go`](internal/rdap/rdap.go)) to stay within fair use. Scanner state lives in the `data` release, so the git history only carries the small public lists.
+
+<a id="mcp"></a>
+## MCP server
+
+`shortfree mcp` is an [MCP](https://modelcontextprotocol.io) server for Claude, Cursor, VS Code and other clients. It has four read-only tools:
+
+| Tool | What it does |
+|---|---|
+| `check_domains` | live DNS + RDAP check of up to 50 domains, any length, any TLD (RDAP for the eight TLDs above) |
+| `find_free_domains` | search the daily snapshot by TLD, length, character kind, substring or prefix |
+| `suggest_domains` | turn a word or project name into short candidates and return the free ones |
+| `domain_stats` | counts per TLD and length |
 
 ```sh
-go install github.com/maximilianfeix/shortfree/cmd/shortfree@latest
+claude mcp add shortfree -- docker run -i --rm ghcr.io/maximilianfeix/shortfree
+```
+
+Setup for Claude Desktop, Cursor and VS Code, and the scoring rules of `suggest_domains`: [docs/mcp.md](docs/mcp.md).
+
+<a id="api"></a>
+## API
+
+A static, read-only JSON/CSV API on GitHub Pages, rebuilt after every scan. No key, CORS enabled.
+
+```
+https://maximilianfeix.github.io/shortfree/api/v1/
+```
+
+| Path | Content |
+|---|---|
+| `stats.json` | counts per TLD and length |
+| `{tld}.json`, `{tld}/{n}.json` | 1–3 character names on one TLD, optionally of one length |
+| `dropping.json` | names in redemption or pending delete, soonest first |
+| `changes.json` | names freed or taken in the last 30 days |
+| `free.csv` | every RDAP-verified free 1–3 character domain |
+| `badge.json` | [shields.io endpoint](https://shields.io/badges/endpoint-badge) with the current count |
+
+```sh
+curl -s https://maximilianfeix.github.io/shortfree/api/v1/io/3.json | jq -r '.available[] + ".io"'
+```
+
+All endpoints, field meanings and examples in Python and JavaScript: [docs/api.md](docs/api.md). OpenAPI spec: [docs/openapi.yaml](docs/openapi.yaml).
+
+<a id="cli"></a>
+## CLI
+
+```sh
 shortfree check q7.tools x4k.app abc.de
 ```
 
@@ -67,29 +181,66 @@ x4k.app   taken  registered  taken
 abc.de    taken  registered  taken
 ```
 
-## How it works
+`check` works for domains of any length and TLD. For TLDs without RDAP support in shortfree it gives a DNS-only verdict (`probably free`). `-json` prints one object per domain:
 
-1. **Sweep.** For every label, `shortfree` sends an `NS` query straight to the TLD's authoritative name servers (no recursive resolver, no cache). `NXDOMAIN` means the name is not in the zone. This takes minutes for 400,000 queries.
-2. **Verify.** Not being in the zone is not the same as being free: registered names on hold, without name servers or in redemption are missing too. Every 1–3 character candidate is therefore looked up in the registry's RDAP service (Verisign, DENIC, Identity Digital, Google Registry). `404` = not registered; `pending delete` / `redemption period` = dropping.
-3. **Repeat.** [`scan.yml`](.github/workflows/scan.yml) runs daily at 03:17 UTC: all 1–3 character names, plus one of seven shards of the 4 character space per TLD, so each 4 character name is rechecked weekly. Names whose DNS status changes are re-verified the same day; the rest are re-verified at least every 10 days.
+```sh
+shortfree check -json q7.tools | jq '.[0].verdict'
+```
 
-Each registry gets its own rate limit (1.5–6 requests/s for RDAP) so the scan stays well within fair use.
+The other commands run the scan itself: `scan` (1–3 characters, DNS + RDAP), `scan4` (one shard of 4 characters), `export` (writes `data/` and the table above), `merge` and `mcp`. `shortfree <command> -h` lists the flags.
 
-### Caveats
+### In GitHub Actions
 
-- **Free ≠ cheap.** Registries reserve some names or sell them at premium prices (common for 1–2 characters on new TLDs). RDAP does not expose that; your registrar shows the final price.
-- **4 characters are DNS-only.** Registered names without name servers can appear in the 4 character lists. Check one with `shortfree check` before you get attached.
-- **Snapshots age.** A name can be registered minutes after the scan.
+The repo is also a GitHub Action. It checks a list of domains and can fail the job, or open an issue, when one becomes free:
 
-## Development
+```yaml
+- uses: maximilianfeix/shortfree@main
+  id: watch
+  with:
+    domains: acme.dev acme.io
+    fail-when: never   # free | taken | never
+- run: echo '${{ steps.watch.outputs.free }}'   # ["acme.dev"] or []
+```
+
+Inputs, outputs and a daily watch workflow: [docs/action.md](docs/action.md).
+
+<a id="faq"></a>
+## FAQ
+
+**A name is listed as free, but my registrar says it is unavailable or premium. Why?**
+The registry has reserved it or prices it as premium. RDAP only says whether a name is registered, not what it costs. This happens mostly with 1–2 character names outside .com, .net and .de. The site and the MCP tools mark these as likely premium.
+
+**How fresh is the data?**
+The scan starts at 03:17 UTC every day. Every JSON file has an `updated` field with the scan time. 1–3 character names are swept daily, 4 character names once a week.
+
+**Why are 4 character names not RDAP-verified?**
+There are 1,774,224 of them per TLD. At the rate limits shortfree uses (1.5–6 requests per second), one pass over a single TLD would take between 3 and 14 days. DNS answers the same question for most names in minutes.
+
+**Why only these eight TLDs?**
+Each TLD needs a registry RDAP service that answers reliably at a polite rate, and each one adds about 300,000 DNS queries a day (all 1–3 character names plus a seventh of the 4 character space). To add one, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Does shortfree sell domains or track me?**
+No. There are no affiliate links, no accounts and no analytics. The site and the API are static files on GitHub Pages. The code is MIT, the data CC0.
+
+<a id="contributing"></a>
+## Contributing
+
+Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how to add a TLD. Before you open a PR:
 
 ```sh
 go test ./...
+go vet ./...
+gofmt -l .
+```
+
+To run a small scan locally:
+
+```sh
 go run ./cmd/shortfree scan -tlds tools -rdap-time 1m   # writes state/state.json.gz
 go run ./cmd/shortfree export -tlds tools -readme ''      # writes data/
 ```
 
-The site in [`site/`](site) is plain HTML/CSS/JS and reads the same data files. See [CONTRIBUTING.md](CONTRIBUTING.md) to add a TLD.
+Security issues: see [SECURITY.md](SECURITY.md).
 
 ## License
 

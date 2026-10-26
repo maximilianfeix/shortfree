@@ -8,7 +8,6 @@ import (
 	"sort"
 	"sync"
 	"sync/atomic"
-	"text/tabwriter"
 	"time"
 
 	"github.com/maximilianfeix/shortfree/internal/names"
@@ -16,24 +15,6 @@ import (
 	"github.com/maximilianfeix/shortfree/internal/rdap"
 	"github.com/maximilianfeix/shortfree/internal/store"
 )
-
-func cmdCheck(ctx context.Context, args []string) error {
-	fs := newFlags("check")
-	fs.Parse(args)
-	if fs.NArg() == 0 {
-		return fmt.Errorf("usage: shortfree check <domain>...")
-	}
-	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "DOMAIN\tDNS\tRDAP\tVERDICT")
-	for _, r := range newChecker().checkAll(ctx, fs.Args()) {
-		verdict := r.Verdict
-		if r.DNS == "-" && r.Error != "" {
-			verdict = r.Error
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", r.Domain, r.DNS, r.RDAP, verdict)
-	}
-	return tw.Flush()
-}
 
 func verdictOf(dns probe.Result, r rdap.Status) string {
 	switch {

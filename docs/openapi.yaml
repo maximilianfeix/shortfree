@@ -60,6 +60,16 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/DroppingList" }
+  /badge.json:
+    get:
+      operationId: getBadge
+      summary: shields.io endpoint badge with the number of RDAP-verified free 1-3 character domains
+      responses:
+        "200":
+          description: Badge in the shields.io endpoint format
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Badge" }
   /{tld}.json:
     get:
       operationId: getTLD
@@ -206,6 +216,15 @@ components:
         updated: { type: string, format: date-time }
         count: { type: integer }
         domains: { type: array, items: { $ref: "#/components/schemas/DroppingDomain" } }
+    Badge:
+      type: object
+      description: "shields.io endpoint format, see https://shields.io/badges/endpoint-badge"
+      required: [schemaVersion, label, message, color]
+      properties:
+        schemaVersion: { type: integer, const: 1 }
+        label: { type: string, examples: ["free short domains"] }
+        message: { type: string, examples: ["12,345 verified"] }
+        color: { type: string, examples: ["1FC16B"] }
     List:
       type: object
       required: [updated, tld, available, dropping, unverified]

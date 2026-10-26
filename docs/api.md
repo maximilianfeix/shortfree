@@ -24,6 +24,7 @@ https://maximilianfeix.github.io/shortfree/api/v1/
 | `{tld}/{n}.json`, e.g. [`io/3.json`](https://maximilianfeix.github.io/shortfree/api/v1/io/3.json) | the same, only labels of length `n` (1–3) |
 | [`free.csv`](https://maximilianfeix.github.io/shortfree/api/v1/free.csv) | every RDAP-verified free 1–3 character domain on all TLDs |
 | `{tld}.csv`, e.g. [`ai.csv`](https://maximilianfeix.github.io/shortfree/api/v1/ai.csv) | every listed 1–3 character name on one TLD, all statuses |
+| [`badge.json`](https://maximilianfeix.github.io/shortfree/api/v1/badge.json) | [shields.io endpoint badge](https://shields.io/badges/endpoint-badge) with the number of RDAP-verified free domains |
 
 The CSV files are also attached to the [`data` release](https://github.com/maximilianfeix/shortfree/releases/tag/data) as `short-all.csv` and `short-<tld>.csv`.
 
@@ -34,6 +35,14 @@ The CSV files are also attached to the [`data` release](https://github.com/maxim
 | `available` | not in the zone and the registry's RDAP service returns `404` |
 | `dropping` | registered, but in redemption period or pending delete; may become available soon |
 | `unverified` | not in the zone, RDAP check still queued |
+
+### Badge
+
+`badge.json` is `{"schemaVersion":1,"label":"free short domains","message":"<N> verified","color":"1FC16B"}`, where `<N>` is the number of rows in `free.csv`. Use it with shields.io:
+
+```markdown
+![free short domains](https://img.shields.io/endpoint?url=https%3A%2F%2Fmaximilianfeix.github.io%2Fshortfree%2Fapi%2Fv1%2Fbadge.json)
+```
 
 ### CSV columns
 

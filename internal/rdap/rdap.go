@@ -64,7 +64,10 @@ type Info struct {
 type Client struct {
 	HTTP      *http.Client
 	UserAgent string
-	rps       float64
+	// Attempts is the number of tries per lookup. Batch scans can wait out a
+	// registry's 429s; interactive callers should give up early.
+	Attempts int
+	rps      float64
 
 	mu     sync.Mutex
 	limits map[string]*rate.Limiter
@@ -76,6 +79,7 @@ func New(rps float64, userAgent string) *Client {
 	return &Client{
 		HTTP:      &http.Client{Timeout: 20 * time.Second},
 		UserAgent: userAgent,
+		Attempts:  6,
 		rps:       rps,
 		limits:    map[string]*rate.Limiter{},
 	}
@@ -121,7 +125,7 @@ func (c *Client) Lookup(ctx context.Context, label, tld string) (Info, error) {
 	lim := c.limiter(base)
 
 	var lastErr error
-	for attempt := 0; attempt < 6; attempt++ {
+	for attempt := 0; attempt < c.Attempts; attempt++ {
 		if err := lim.Wait(ctx); err != nil {
 			return Info{Status: Error}, err
 		}

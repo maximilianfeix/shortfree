@@ -43,6 +43,10 @@ type checker struct {
 func newChecker() *checker {
 	c := &checker{probers: map[string]*probe.Prober{}}
 	rc := rdap.New(0, userAgent)
+	// A person or a model is waiting: two tries with short timeouts, then
+	// report "RDAP failed" instead of blocking for minutes.
+	rc.Attempts = 2
+	rc.HTTP.Timeout = 8 * time.Second
 	c.dns = c.liveDNS
 	c.rdap = func(ctx context.Context, label, tld string) (rdap.Info, bool, error) {
 		if _, ok := rdap.Endpoints[tld]; !ok {

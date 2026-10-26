@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       shard:
-        description: "4 character shard to scan (0-6, empty = today's)"
+        description: "4 character shard to scan (0-6, all = every shard for a full refresh, empty = today's)"
         required: false
       rdap_time:
         description: "RDAP time budget per TLD"
@@ -52,7 +52,7 @@ jobs:
           # One shard for every job, even if a job starts after midnight.
           case "$SHARD" in
             "") SHARD=$(( 10#$(date -u +%j) % 7 )) ;;
-            [0-6]) ;;
+            [0-6]|all) ;;
             *) echo "invalid shard: $SHARD"; exit 1 ;;
           esac
           [[ "$RDAP_TIME" =~ ^[0-9]+[hm]$ ]] || { echo "invalid rdap_time: $RDAP_TIME"; exit 1; }
@@ -108,12 +108,22 @@ jobs:
       - name: Sweep 1-3 characters and verify via RDAP
         env:
           RDAP_TIME: ${{ needs.plan.outputs.rdap_time }}
-        run: ./shortfree scan -tlds "$TLD" -rdap-time "$RDAP_TIME" -rdap-time-new 270m -keep-only
+          SHARD: ${{ needs.plan.outputs.shard }}
+        run: |
+          # A full 4 character refresh needs ~80 min of DNS time, so new TLDs
+          # get the normal RDAP budget instead of the long first-run one.
+          NEW=270m; [ "$SHARD" = all ] && NEW="$RDAP_TIME"
+          ./shortfree scan -tlds "$TLD" -rdap-time "$RDAP_TIME" -rdap-time-new "$NEW" -keep-only
 
-      - name: Sweep today's 4 character shard
+      - name: Sweep 4 character shard(s)
         env:
           SHARD: ${{ needs.plan.outputs.shard }}
-        run: ./shortfree scan4 -tlds "$TLD" -shard "$SHARD"
+        run: |
+          if [ "$SHARD" = all ]; then
+            for s in 0 1 2 3 4 5 6; do ./shortfree scan4 -tlds "$TLD" -shard "$s"; done
+          else
+            ./shortfree scan4 -tlds "$TLD" -shard "$SHARD"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:

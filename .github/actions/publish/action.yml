@@ -1,9 +1,15 @@
 name: publish
-description: Export public data, upload a dated snapshot and the rolling assets to the data release, commit data/ and upload the Pages artifact.
+description: Export public data, upload the rolling assets (and, when final, a dated snapshot) to the data release, commit data/ (when final) and upload the Pages artifact.
 inputs:
   message:
     description: Commit message prefix
     default: "data: scan"
+  final:
+    description: "true: also write the dated snapshot and manifest.json and commit data/. false: an incremental publish while the scan is still running (rolling assets and site only)."
+    default: "true"
+  base:
+    description: Directory with the bitmaps the data release holds now; bitmaps that did not change are not uploaded again (empty = upload all)
+    default: ""
 runs:
   using: composite
   steps:
@@ -11,13 +17,27 @@ runs:
       shell: bash
       run: ./shortfree export
 
-    - name: Upload a dated snapshot and the rolling assets to the data release
+    - name: Upload the rolling assets (and when final a dated snapshot) to the data release
       shell: bash
+      env:
+        FINAL: ${{ inputs.final }}
+        BASE: ${{ inputs.base }}
       run: |
         set -euo pipefail
         shopt -s nullglob
         mkdir -p release snapshot-src
-        for f in dist/4/*.txt; do t=$(basename "$f" .txt); gzip -9c "$f" > "release/four-$t.txt.gz"; done
+        # Bitmaps (and their 4 character lists) only where they changed:
+        # scan jobs still starting read their own TLD's bitmap while this
+        # runs, and an upload with --clobber briefly removes the old asset.
+        bins=() covs=()
+        for f in bitmaps/*.bin; do
+          t=$(basename "$f" .bin)
+          c="bitmaps/$t.cov.json"
+          if [ -f "$c" ] && { [ -z "$BASE" ] || ! cmp -s "$c" "$BASE/$t.cov.json"; }; then covs+=("$c"); fi
+          if [ -n "$BASE" ] && cmp -s "$f" "$BASE/$t.bin"; then continue; fi
+          bins+=("$f")
+          if [ -f "dist/4/$t.txt" ]; then gzip -9c "dist/4/$t.txt" > "release/four-$t.txt.gz"; fi
+        done
         for f in data/txt/*.txt; do
           t=$(basename "$f")
           cp "$f" "release/verified-$t"
@@ -28,37 +48,46 @@ runs:
           if [ "$t" = free ]; then cp "$f" release/short-all.csv; else cp "$f" "release/short-$t.csv"; fi
         done
         cp data/changes.json data/coverage.json release/
-
-        # The snapshot is one immutable archive per run: lists, CSVs,
-        # bitmaps with shard coverage, stats and coverage. 4 character text
-        # lists are left out (the bitmaps hold the same data, much smaller).
-        cp release/verified-*.txt release/short-*.csv release/changes.json snapshot-src/
-        cp data/stats.json data/coverage.json data/available.json snapshot-src/
-        cp bitmaps/*.bin snapshot-src/
-        covs=(bitmaps/*.cov.json)
-        if ((${#covs[@]})); then cp "${covs[@]}" snapshot-src/; fi
         gh release view data >/dev/null 2>&1 || gh release create data --target "$GITHUB_SHA" --title "Latest data" --notes "Rolling data release, replaced daily." --latest=false
-        assets=$(gh release view data --json assets -q '.assets[].name')
-        name="snapshot-$(jq -r '.updated[:10]' data/stats.json)"
-        # Never overwrite a published snapshot: a rerun on the same day gets
-        # its own name.
-        if grep -qx "$name.tar.gz" <<<"$assets"; then name="$name-${GITHUB_RUN_ID}x${GITHUB_RUN_ATTEMPT}"; fi
-        ./shortfree snapshot -in snapshot-src -name "$name" -out snapshot
 
-        # Order matters: the immutable snapshot first, the rolling assets
-        # next, manifest.json (the pointer consumers read first) last.
-        gh release upload data "snapshot/$name.tar.gz"
-        gh release upload data state/state.json.gz bitmaps/*.bin release/* --clobber
+        if [ "$FINAL" = true ]; then
+          # The snapshot is one immutable archive per run: lists, CSVs,
+          # bitmaps with shard coverage, stats and coverage. 4 character text
+          # lists are left out (the bitmaps hold the same data, much smaller).
+          cp release/verified-*.txt release/short-*.csv release/changes.json snapshot-src/
+          cp data/stats.json data/coverage.json data/available.json snapshot-src/
+          cp bitmaps/*.bin snapshot-src/
+          allcovs=(bitmaps/*.cov.json)
+          if ((${#allcovs[@]})); then cp "${allcovs[@]}" snapshot-src/; fi
+          assets=$(gh release view data --json assets -q '.assets[].name')
+          name="snapshot-$(jq -r '.updated[:10]' data/stats.json)"
+          # Never overwrite a published snapshot: a rerun on the same day gets
+          # its own name.
+          if grep -qx "$name.tar.gz" <<<"$assets"; then name="$name-${GITHUB_RUN_ID}x${GITHUB_RUN_ATTEMPT}"; fi
+          ./shortfree snapshot -in snapshot-src -name "$name" -out snapshot
+          # The immutable snapshot goes up before the rolling assets.
+          gh release upload data "snapshot/$name.tar.gz"
+        fi
+
+        # state.json.gz on its own (scan jobs retry while it is missing), then
+        # bitmaps with coverage, then the lists; manifest.json (the pointer
+        # consumers read first) last.
+        gh release upload data state/state.json.gz --clobber
+        if ((${#bins[@]})); then gh release upload data "${bins[@]}" --clobber; fi
         if ((${#covs[@]})); then gh release upload data "${covs[@]}" --clobber; fi
-        gh release upload data snapshot/manifest.json --clobber
+        gh release upload data release/* --clobber
 
-        # Keep the newest 30 snapshots.
-        gh release view data --json assets -q '.assets[].name' | grep -E '^snapshot-.*\.tar\.gz$' | sort | head -n -30 |
-          while read -r old; do gh release delete-asset data "$old" -y; done
+        if [ "$FINAL" = true ]; then
+          gh release upload data snapshot/manifest.json --clobber
+          # Keep the newest 30 snapshots.
+          gh release view data --json assets -q '.assets[].name' | grep -E '^snapshot-.*\.tar\.gz$' | sort | head -n -30 |
+            while read -r old; do gh release delete-asset data "$old" -y; done
+        fi
 
-        gh release edit data --notes "$(printf 'Rolling data release, updated daily by the scan workflow.\n\nLast scan: %s\n\n- `manifest.json`: points to the newest snapshot (name, SHA-256, file list, counts, coverage). Read it first.\n- `snapshot-YYYY-MM-DD.tar.gz`: immutable archive of one run (the newest 30 are kept): verified lists, CSVs, bitmaps with shard coverage, stats.json, coverage.json\n- `verified-<tld>.txt`: 1–3 character domains with current RDAP evidence of not being registered (`short-<tld>.txt` is the same file under its old name)\n- `short-<tld>.csv`: 1–3 character names with status, verification (rdap_verified, stale, pending) and evidence age\n- `short-all.csv`: every RDAP-verified 1–3 character domain on all TLDs (same columns)\n- `changes.json`: domains freed (RDAP registered/dropping to 404), newly listed or taken in the last 30 days\n- `coverage.json`: what the data is based on (sweeps, unknowns, unscanned shards, evidence age)\n- `four-<tld>.txt.gz`: 4 character names not in the zone (DNS check only)\n- `<tld>.bin`, `<tld>.cov.json`: 4 character bitmap (1 bit per base-37 index) and which shards were swept\n- `state.json.gz`: scanner state\n\nNot registered does not mean registrable: see docs/accuracy.md.' "$(date -u '+%Y-%m-%d %H:%M UTC')")"
+        gh release edit data --notes "$(printf 'Rolling data release, updated by the scan workflow as each TLD finishes.\n\nLast update: %s\n\n- `manifest.json`: points to the newest snapshot (name, SHA-256, file list, counts, coverage). Read it first.\n- `snapshot-YYYY-MM-DD.tar.gz`: immutable archive of one complete daily run (the newest 30 are kept): verified lists, CSVs, bitmaps with shard coverage, stats.json, coverage.json\n- `verified-<tld>.txt`: 1–3 character domains with current RDAP evidence of not being registered (`short-<tld>.txt` is the same file under its old name)\n- `short-<tld>.csv`: 1–3 character names with status, verification (rdap_verified, stale, pending) and evidence age\n- `short-all.csv`: every RDAP-verified 1–3 character domain on all TLDs (same columns)\n- `changes.json`: domains freed (RDAP registered/dropping to 404), newly listed or taken in the last 30 days\n- `coverage.json`: what the data is based on (sweeps, unknowns, unscanned shards, evidence age)\n- `four-<tld>.txt.gz`: 4 character names not in the zone (DNS check only)\n- `<tld>.bin`, `<tld>.cov.json`: 4 character bitmap (1 bit per base-37 index) and which shards were swept\n- `state.json.gz`: scanner state\n- `part-<tld>.tar.gz`: output of a scan job that is not yet in a snapshot (internal, removed after the daily run)\n\nThe rolling assets include each TLD as soon as its job is done; the snapshot is written once all jobs are done.\n\nNot registered does not mean registrable: see docs/accuracy.md.' "$(date -u '+%Y-%m-%d %H:%M UTC')")"
 
     - name: Commit public data
+      if: ${{ inputs.final == 'true' }}
       shell: bash
       env:
         MESSAGE: ${{ inputs.message }}

@@ -1,0 +1,45 @@
+name: upload-part
+description: Upload one TLD's scan output to the data release as part-<tld>.tar.gz and ask pages.yml to publish it.
+inputs:
+  tld:
+    description: The TLD this job scanned
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Upload part-${{ inputs.tld }}.tar.gz and dispatch pages.yml
+      shell: bash
+      env:
+        TLD: ${{ inputs.tld }}
+      run: |
+        set -euo pipefail
+        # One archive per TLD, so the state and the bitmap of a part always
+        # belong together. Layout as "shortfree merge" reads it; run_id tells
+        # pages.yml when every job of this scan run has finished.
+        dir=$(mktemp -d)
+        mkdir -p "$dir/state" "$dir/bitmaps"
+        cp state/state.json.gz "$dir/state/"
+        for f in "bitmaps/$TLD.bin" "bitmaps/$TLD.cov.json"; do
+          if [ -f "$f" ]; then cp "$f" "$dir/bitmaps/"; fi
+        done
+        echo "$GITHUB_RUN_ID" > "$dir/run_id"
+        part="part-$TLD.tar.gz"
+        tar -czf "$part" -C "$dir" .
+
+        # First run: parallel jobs may race to create the release.
+        if ! gh release view data >/dev/null 2>&1; then
+          gh release create data --target "$GITHUB_SHA" --title "Latest data" --notes "Rolling data release, replaced daily." --latest=false ||
+            gh release view data >/dev/null
+        fi
+        # Only this job writes this asset name.
+        for try in 1 2 3; do
+          if gh release upload data "$part" --clobber; then break; fi
+          if [ "$try" = 3 ]; then exit 1; fi
+          sleep 20
+        done
+
+        # The pages workflow merges every part in the release, so a missed
+        # dispatch is caught up by the next one (at the latest by the scan's
+        # final dispatch).
+        gh workflow run pages.yml --ref "$GITHUB_REF_NAME" ||
+          echo "::warning title=publish .$TLD::could not dispatch pages.yml; the next publish run picks up this part"

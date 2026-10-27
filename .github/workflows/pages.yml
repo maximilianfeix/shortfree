@@ -1,8 +1,23 @@
 name: pages
 
-# Deploys the site whenever the site itself changes, without waiting for the
-# daily scan. Reads the latest state from the data release (read-only) and
-# rebuilds data files, API and SEO pages from it; commits and uploads nothing.
+# Publishes the data and deploys the site. Runs when the site changes, and is
+# dispatched by every scan job as soon as its TLD is done (scan.yml), so each
+# TLD goes live without waiting for the slowest job.
+#
+# Every run does the same, so a newer queued run can stand in for an older
+# one (the concurrency group keeps one run going and the newest one waiting):
+#   1. download the published data (state.json.gz, bitmaps) and every
+#      part-<tld>.tar.gz scan jobs left in the data release;
+#   2. no parts: rebuild the site from the published data (read-only);
+#   3. parts: merge them into the published data (each part owns its TLD;
+#      older parts and implausible jumps are ignored, see "shortfree merge"),
+#      upload the result as the new published data and deploy;
+#   4. final, once every job of the scan runs the parts come from has
+#      finished: also the dated snapshot, manifest.json and the data/ commit,
+#      and the parts it merged are deleted (by asset id, so a part a newer
+#      scan job uploaded meanwhile stays).
+# This workflow is the only writer of the merged data in the release, and
+# the concurrency group makes it one writer at a time.
 on:
   push:
     branches: [main]
@@ -10,17 +25,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # data release, data/ commit
   pages: write
   id-token: write
+  actions: read # status of the scan runs the parts come from
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: publish
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -33,24 +50,100 @@ jobs:
           go-version-file: go.mod
       - run: go build -o shortfree ./cmd/shortfree
 
-      - name: Restore data (read-only)
+      - name: Restore published data and scan parts
+        id: restore
         run: |
-          mkdir -p state bitmaps
-          if out=$(gh release view data --json assets -q '.assets[].name' 2>&1); then
-            gh release download data -p 'state.json.gz' -D state
-            gh release download data -p '*.bin' -D bitmaps
-            if grep -q '\.cov\.json$' <<<"$out"; then
-              gh release download data -p '*.cov.json' -D bitmaps
+          mkdir -p prev/state prev/bitmaps parts part-dl
+          : > consumed.txt
+          if ! out=$(gh release view data --json assets -q '.assets[].name' 2>&1); then
+            if grep -qi "not found" <<<"$out"; then
+              echo "no data release yet"
+              echo "parts=false" >> "$GITHUB_OUTPUT"; echo "final=false" >> "$GITHUB_OUTPUT"
+              exit 0
             fi
-          elif grep -qi "not found" <<<"$out"; then
-            echo "no data release yet: deploying the site without data"
-          else
             echo "$out"; exit 1
           fi
+          # Only this workflow writes these, and never two runs at once.
+          if grep -qx 'state.json.gz' <<<"$out"; then gh release download data -p 'state.json.gz' -D prev/state; fi
+          if grep -q '\.bin$' <<<"$out"; then gh release download data -p '*.bin' -D prev/bitmaps; fi
+          if grep -q '\.cov\.json$' <<<"$out"; then gh release download data -p '*.cov.json' -D prev/bitmaps; fi
 
-      - name: Build site
+          # Parts by asset id: a scan job may replace its part any time.
+          rid=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/data" --jq .id)
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$rid/assets" \
+            --jq '.[] | select(.name | test("^part-[a-z0-9-]+\\.tar\\.gz$")) | "\(.id) \(.name)"' > parts.txt
+          while read -r id name; do
+            tld=${name#part-}; tld=${tld%.tar.gz}
+            if ! gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$id" > "part-dl/$name" </dev/null; then
+              # Replaced while listing; the scan job dispatched another run.
+              echo "::warning title=publish .$tld::part $id vanished, the next run merges its replacement"
+              continue
+            fi
+            mkdir -p "parts/$tld"
+            tar -xzf "part-dl/$name" -C "parts/$tld" --no-same-owner
+            if [ ! -f "parts/$tld/state/state.json.gz" ] || ! grep -qE '^[0-9]+$' "parts/$tld/run_id" 2>/dev/null; then
+              echo "::warning title=publish .$tld::malformed part $name, ignored"
+              rm -rf "parts/$tld"; continue
+            fi
+            echo "$id $(cat "parts/$tld/run_id") $tld" >> consumed.txt
+          done < parts.txt
+          cat consumed.txt
+
+          # Final once no scan job of the parts' runs can upload any more.
+          final=false
+          if [ -s consumed.txt ]; then
+            final=true
+            while read -r run; do
+              if open=$(gh run view "$run" -R "$GITHUB_REPOSITORY" --json jobs \
+                  -q '[.jobs[] | select(.name | startswith("scan (")) | select(.status != "completed")] | length' 2>&1 </dev/null); then
+                if [ "$open" != 0 ]; then echo "scan run $run: $open job(s) still running"; final=false; fi
+              elif grep -qi "not found" <<<"$open"; then
+                echo "scan run $run no longer exists, counting it as finished"
+              else
+                echo "scan run $run: $open"; final=false
+              fi
+            done < <(cut -d' ' -f2 consumed.txt | sort -u)
+            echo "parts=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "parts=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "final=$final" >> "$GITHUB_OUTPUT"
+          echo "parts: $(wc -l < consumed.txt), final: $final"
+
+      - name: Merge scan parts into the published data
+        if: ${{ steps.restore.outputs.parts == 'true' }}
         run: |
-          mkdir -p _site/data/4
+          # Without a base (first run), TLDs no part owns stay missing:
+          # export leaves them out instead of showing 0 free names.
+          ./shortfree merge -base prev parts/*
+          ls -la state bitmaps
+
+      - uses: ./.github/actions/publish
+        if: ${{ steps.restore.outputs.parts == 'true' }}
+        with:
+          final: ${{ steps.restore.outputs.final }}
+          base: prev/bitmaps
+
+      - name: Delete the merged parts
+        if: ${{ steps.restore.outputs.final == 'true' }}
+        run: |
+          # By id: a part replaced since the download has a new id and stays.
+          while read -r id run tld; do
+            if out=$(gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$id" 2>&1 </dev/null); then
+              echo "deleted part of .$tld (run $run)"
+            elif grep -q "404" <<<"$out"; then
+              echo "part of .$tld already replaced"
+            else
+              echo "$out"; exit 1
+            fi
+          done < consumed.txt
+
+      - name: Build site from the published data (read-only)
+        if: ${{ steps.restore.outputs.parts != 'true' }}
+        run: |
+          mkdir -p state bitmaps _site/data/4
+          cp -r prev/state/. state/
+          cp -r prev/bitmaps/. bitmaps/
           cp -r site/. _site/
           cp brand/mark.svg brand/favicon.svg brand/social-preview.png _site/
           if [ -f state/state.json.gz ]; then
@@ -61,12 +154,17 @@ jobs:
             cp -r dist/api _site/api
             cp docs/openapi.yaml _site/api/
             ./shortfree pages -data data -bitmaps bitmaps -out _site
+          else
+            echo "no published data yet: deploying the site without data"
           fi
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v6
+        if: ${{ steps.restore.outputs.parts != 'true' }}
       - uses: actions/upload-pages-artifact@v5
+        if: ${{ steps.restore.outputs.parts != 'true' }}
         with:
           path: _site
+
       - id: deploy
         uses: actions/deploy-pages@v5

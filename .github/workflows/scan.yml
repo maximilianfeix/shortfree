@@ -67,6 +67,8 @@ jobs:
     needs: plan
     runs-on: ubuntu-latest
     # A new TLD's first run: DNS sweep + 270 min RDAP + one 4 character shard.
+    # The 4 character sweep stops at SCAN4_STOP_MIN after the job start, so
+    # the job finishes and uploads well before this timeout.
     timeout-minutes: 330
     strategy:
       fail-fast: false
@@ -75,7 +77,10 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       TLD: ${{ matrix.tld }}
+      SCAN4_STOP_MIN: 300
     steps:
+      - name: Note the job start
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
@@ -106,6 +111,7 @@ jobs:
           ls -la state bitmaps
 
       - name: Sweep 1-3 characters and verify via RDAP
+        id: scan13
         env:
           RDAP_TIME: ${{ needs.plan.outputs.rdap_time }}
           SHARD: ${{ needs.plan.outputs.shard }}
@@ -119,13 +125,31 @@ jobs:
         env:
           SHARD: ${{ needs.plan.outputs.shard }}
         run: |
-          if [ "$SHARD" = all ]; then
-            for s in 0 1 2 3 4 5 6; do ./shortfree scan4 -tlds "$TLD" -shard "$s"; done
-          else
-            ./shortfree scan4 -tlds "$TLD" -shard "$SHARD"
-          fi
+          # Slow name servers can make a shard take hours. Each scan4 run
+          # gets the time left until SCAN4_STOP_MIN after the job start; a
+          # shard cut off by it is saved but not recorded as swept (coverage
+          # keeps its previous state), and remaining shards are skipped.
+          # timeout is only a backstop: SIGINT also saves the answers so far.
+          stop=$(( JOB_START + SCAN4_STOP_MIN * 60 ))
+          shards="$SHARD"; [ "$SHARD" = all ] && shards="0 1 2 3 4 5 6"
+          status=0
+          for s in $shards; do
+            left=$(( stop - $(date +%s) ))
+            if [ "$left" -lt 60 ]; then
+              echo "::warning title=scan4 .$TLD::time budget used up, shard(s) from $s on not swept this run (coverage keeps their previous state)"
+              break
+            fi
+            timeout -s INT -k 60 $(( left + 120 )) ./shortfree scan4 -tlds "$TLD" -shard "$s" -time "${left}s" || status=$?
+          done
+          exit "$status"
 
+      # Upload whenever the 1-3 character step succeeded, even if the 4
+      # character step failed: its state is complete on its own, and the
+      # bitmap's coverage file says which shards were swept. Without a
+      # successful 1-3 step, state.json.gz is still the full downloaded state
+      # and must not be uploaded as this TLD's output.
       - uses: actions/upload-artifact@v4
+        if: ${{ always() && steps.scan13.outcome == 'success' }}
         with:
           name: tld-${{ matrix.tld }}
           path: |

@@ -58,9 +58,17 @@ func registrationOf(dns probe.Result, r rdap.Status) string {
 	return "unknown"
 }
 
-// sweep runs check for every label on prober p with the given number of
-// workers, calling done for each result. It prints progress to stderr.
-func sweep(ctx context.Context, p *probe.Prober, labels []string, workers int, done func(label string, r probe.Result)) {
+// checkFunc returns the zone status of one label (probe.Prober.Check).
+type checkFunc func(ctx context.Context, label string) probe.Result
+
+// sweep runs check for every label of tld with the given number of workers,
+// calling done for each result. It prints progress to stderr.
+//
+// A non-zero deadline stops dispatching new labels once it has passed;
+// queries already in flight still finish. sweep returns how many labels were
+// dispatched (all of them were answered or gave up before it returns): a
+// sweep is complete only if that equals len(labels) and ctx is not done.
+func sweep(ctx context.Context, tld string, check checkFunc, labels []string, workers int, deadline time.Time, done func(label string, r probe.Result)) int {
 	jobs := make(chan string, workers)
 	var wg sync.WaitGroup
 	var n atomic.Int64
@@ -70,21 +78,37 @@ func sweep(ctx context.Context, p *probe.Prober, labels []string, workers int, d
 		go func() {
 			defer wg.Done()
 			for l := range jobs {
-				done(l, p.Check(ctx, l))
+				done(l, check(ctx, l))
 				if c := n.Add(1); c%50000 == 0 {
-					fmt.Fprintf(os.Stderr, "  .%s %d/%d (%.0f q/s)\n", p.TLD, c, len(labels), float64(c)/time.Since(start).Seconds())
+					fmt.Fprintf(os.Stderr, "  .%s %d/%d (%.0f q/s)\n", tld, c, len(labels), float64(c)/time.Since(start).Seconds())
 				}
 			}
 		}()
 	}
+	var stop <-chan time.Time
+	if !deadline.IsZero() {
+		t := time.NewTimer(time.Until(deadline))
+		defer t.Stop()
+		stop = t.C
+	}
+	sent := 0
+dispatch:
 	for _, l := range labels {
-		if ctx.Err() != nil {
+		if ctx.Err() != nil || (!deadline.IsZero() && !time.Now().Before(deadline)) {
 			break
 		}
-		jobs <- l
+		select {
+		case jobs <- l:
+			sent++
+		case <-stop:
+			break dispatch
+		case <-ctx.Done():
+			break dispatch
+		}
 	}
 	close(jobs)
 	wg.Wait()
+	return sent
 }
 
 func cmdScan(ctx context.Context, args []string) error {
@@ -130,7 +154,7 @@ func cmdScan(ctx context.Context, args []string) error {
 			mu.Unlock()
 			fmt.Fprintf(os.Stderr, "scan .%s: %d names via %d servers\n", tld, len(labels), len(p.Servers()))
 			var free, taken, unknown int
-			sweep(ctx, p, labels, *workers, func(l string, r probe.Result) {
+			sweep(ctx, tld, p.Check, labels, *workers, time.Time{}, func(l string, r probe.Result) {
 				mu.Lock()
 				defer mu.Unlock()
 				sweepResult(st.TLD(tld), l, r, now)
@@ -462,6 +486,7 @@ func cmdScan4(ctx context.Context, args []string) error {
 	qps := fs.Int("qps", 400, "DNS queries per second per TLD")
 	workers := fs.Int("workers", 96, "concurrent DNS queries per TLD")
 	statePath := fs.String("state", "state/state.json.gz", "state file whose update time dates bitmaps without coverage file (missing = none)")
+	budget := fs.Duration("time", 0, "time budget for the sweep (0 = unlimited): then no further names are queried, the answers so far are saved and the shard is not recorded as swept")
 	fs.Parse(args)
 	// Bitmaps from before coverage was recorded were swept completely by
 	// every run: date them by the state they were published with.
@@ -479,7 +504,13 @@ func cmdScan4(ctx context.Context, args []string) error {
 	if *shard >= *shards {
 		return fmt.Errorf("scan4: -shard %d out of range 0-%d", *shard, *shards-1)
 	}
-	space := names.Space(4)
+	if *budget < 0 {
+		return fmt.Errorf("scan4: -time must not be negative")
+	}
+	var deadline time.Time
+	if *budget > 0 {
+		deadline = time.Now().Add(*budget)
+	}
 	var wg sync.WaitGroup
 	errs := make(chan error, 16)
 	for _, tld := range parseTLDs(*tlds) {
@@ -489,51 +520,14 @@ func cmdScan4(ctx context.Context, args []string) error {
 			if minLen(tld) > 4 {
 				return
 			}
-			path := filepath.Join(*dir, tld+".bin")
-			bm, err := store.LoadBitmap(path, space)
-			if err != nil {
-				errs <- err
-				return
-			}
-			cov, err := store.BitmapCoverage(path, *shards, legacyAt)
-			if err != nil {
-				errs <- err
-				return
-			}
 			p, err := probe.New(ctx, tld, *qps)
 			if err != nil {
 				errs <- err
 				return
 			}
-			var labels []string
-			names.Each(4, *shard, *shards, func(_ int, s string) { labels = append(labels, s) })
-			fmt.Fprintf(os.Stderr, "scan4 .%s shard %d/%d: %d names\n", tld, *shard, *shards, len(labels))
-			var mu sync.Mutex
-			var unknown int
-			sweep(ctx, p, labels, *workers, func(l string, r probe.Result) {
-				mu.Lock()
-				defer mu.Unlock()
-				switch r {
-				case probe.Free:
-					bm.Set(names.Index(l), true)
-				case probe.Taken:
-					bm.Set(names.Index(l), false)
-				default:
-					unknown++ // keep the previous bit
-				}
-			})
-			if ctx.Err() != nil {
-				errs <- ctx.Err()
-				return
-			}
-			fmt.Fprintf(os.Stderr, "scan4 .%s done: %d free in bitmap, %d unknown this run\n", tld, bm.Count(), unknown)
-			if err := store.WriteAtomic(path, bm); err != nil {
-				errs <- err
-				return
-			}
-			// Record the shard as swept only after the bitmap is saved.
-			cov.Record(*shard, *shards, &store.ShardScan{At: time.Now().UTC().Unix(), Names: len(labels), Unknown: unknown})
-			if err := cov.Save(store.CoveragePath(path)); err != nil {
+			defer p.Close()
+			path := filepath.Join(*dir, tld+".bin")
+			if err := scan4TLD(ctx, tld, path, p.Check, *shard, *shards, *workers, deadline, legacyAt); err != nil {
 				errs <- err
 			}
 		}(tld)
@@ -546,4 +540,64 @@ func cmdScan4(ctx context.Context, args []string) error {
 		}
 	}
 	return nil
+}
+
+// scan4TLD sweeps one shard of tld's 4 character names into the bitmap at
+// path and its coverage file. Free and taken answers update the bitmap;
+// names without an answer, and names not queried before the deadline or
+// cancellation, keep their previous bit. The shard is recorded as swept only
+// if every one of its names was queried, so a cut-off sweep never makes an
+// unqueried name count as checked (and its zero bit as taken).
+func scan4TLD(ctx context.Context, tld, path string, check checkFunc, shard, shards, workers int, deadline, legacyAt time.Time) error {
+	bm, err := store.LoadBitmap(path, names.Space(4))
+	if err != nil {
+		return err
+	}
+	cov, err := store.BitmapCoverage(path, shards, legacyAt)
+	if err != nil {
+		return err
+	}
+	// The coverage file must exist before the bitmap is written: a bitmap
+	// without one counts as fully swept (legacy), which a first sweep that
+	// gets cut off is not.
+	covPath := store.CoveragePath(path)
+	if err := cov.Save(covPath); err != nil {
+		return err
+	}
+	var labels []string
+	names.Each(4, shard, shards, func(_ int, s string) { labels = append(labels, s) })
+	fmt.Fprintf(os.Stderr, "scan4 .%s shard %d/%d: %d names\n", tld, shard, shards, len(labels))
+	var mu sync.Mutex
+	var unknown int
+	start := time.Now()
+	sent := sweep(ctx, tld, check, labels, workers, deadline, func(l string, r probe.Result) {
+		mu.Lock()
+		defer mu.Unlock()
+		switch r {
+		case probe.Free:
+			bm.Set(names.Index(l), true)
+		case probe.Taken:
+			bm.Set(names.Index(l), false)
+		default:
+			unknown++ // keep the previous bit
+		}
+	})
+	elapsed := time.Since(start)
+	rate := float64(sent) / max(elapsed.Seconds(), 1e-9)
+	// Answers of a cut-off sweep are real too: save them.
+	if err := store.WriteAtomic(path, bm); err != nil {
+		return err
+	}
+	if sent < len(labels) || ctx.Err() != nil {
+		msg := fmt.Sprintf("shard %d/%d cut off after %s: %d of %d names queried (%.1f%%) at %.0f q/s, %d unknown; shard not recorded as swept, unqueried names keep their previous state",
+			shard, shards, elapsed.Round(time.Second), sent, len(labels), 100*float64(sent)/float64(max(len(labels), 1)), rate, unknown)
+		fmt.Fprintf(os.Stderr, "scan4 .%s %s\n", tld, msg)
+		if os.Getenv("GITHUB_ACTIONS") == "true" {
+			fmt.Printf("::warning title=scan4 .%s::%s\n", tld, msg)
+		}
+		return ctx.Err()
+	}
+	fmt.Fprintf(os.Stderr, "scan4 .%s shard %d/%d done in %s at %.0f q/s: %d free in bitmap, %d unknown this run\n", tld, shard, shards, elapsed.Round(time.Second), rate, bm.Count(), unknown)
+	cov.Record(shard, shards, &store.ShardScan{At: time.Now().UTC().Unix(), Names: len(labels), Unknown: unknown})
+	return cov.Save(covPath)
 }

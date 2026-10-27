@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -305,5 +306,187 @@ func TestExportSkipsNamesBelowMinLen(t *testing.T) {
 	}
 	if string(b) != "abc.so\n" {
 		t.Errorf("so.txt = %q, want only abc.so", b)
+	}
+}
+
+// writeScanPart writes a part like a scan job does: state with a scan record
+// for every TLD at at, and per TLD in bits a bitmap whose coverage says shard
+// 0 was swept at at.
+func writeScanPart(t *testing.T, dir string, at time.Time, tldMap map[string]map[string]*store.Entry, bits map[string][]string) {
+	t.Helper()
+	writePart(t, dir, at, tldMap, bits)
+	st, err := store.Load(filepath.Join(dir, "state", "state.json.gz"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for tld := range tldMap {
+		st.SetScan(tld, at)
+	}
+	if err := st.Save(filepath.Join(dir, "state", "state.json.gz")); err != nil {
+		t.Fatal(err)
+	}
+	for tld := range bits {
+		c := &store.Coverage{Shards: 7, Scans: map[string]*store.ShardScan{"0": {At: at.Unix(), Names: 1}}}
+		if err := c.Save(filepath.Join(dir, "bitmaps", tld+".cov.json")); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// A part left in the data release must never roll back newer data that
+// is already merged into the base.
+func TestMergeOwnedIgnoresOlderPart(t *testing.T) {
+	root := t.TempDir()
+	day1 := time.Date(2026, 10, 26, 3, 0, 0, 0, time.UTC)
+	day2 := day1.AddDate(0, 0, 1)
+	base := filepath.Join(root, "prev")
+	writeScanPart(t, base, day2, map[string]map[string]*store.Entry{"dev": {"bb": free(2)}}, map[string][]string{"dev": {"bbbb"}})
+	old := filepath.Join(root, "part-dev")
+	writeScanPart(t, old, day1, map[string]map[string]*store.Entry{"dev": {"aa": free(1)}}, map[string][]string{"dev": {"aaaa"}})
+
+	st, bms, covs, err := mergeOwned(base, []string{old}, noJump)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := entryLabels(st.TLDs["dev"]); !reflect.DeepEqual(got, []string{"bb"}) {
+		t.Errorf("dev = %v, want base [bb]", got)
+	}
+	if sc := st.ScanOf("dev"); sc.At != day2.Unix() || sc.Held != "" {
+		t.Errorf("dev scan = %+v, want base scan, not held", sc)
+	}
+	if got := setBits(bms["dev"]); !reflect.DeepEqual(got, []string{"bbbb"}) {
+		t.Errorf("dev bitmap = %v, want base [bbbb]", got)
+	}
+	if c := covs["dev"]; newestShard(c) != day2.Unix() || c.Held != "" {
+		t.Errorf("dev coverage = %+v, want base coverage", c)
+	}
+
+	// The same sweep time is not older: a job's second part (after its 4
+	// character step) carries the scan record of its first part.
+	same := filepath.Join(root, "part-dev-4")
+	writeScanPart(t, same, day2, map[string]map[string]*store.Entry{"dev": {"cc": free(2)}}, map[string][]string{"dev": {"cccc"}})
+	st, bms, _, err = mergeOwned(base, []string{same}, noJump)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := entryLabels(st.TLDs["dev"]); !reflect.DeepEqual(got, []string{"cc"}) {
+		t.Errorf("dev = %v, want part [cc]", got)
+	}
+	if got := setBits(bms["dev"]); !reflect.DeepEqual(got, []string{"cccc"}) {
+		t.Errorf("dev bitmap = %v, want part [cccc]", got)
+	}
+}
+
+// mergeInto runs the merge command like the pages workflow: base is the
+// published data, the result goes to out/state and out/bitmaps.
+func mergeInto(t *testing.T, base, out string, extra []string, parts ...string) {
+	t.Helper()
+	args := append(extra, "-state", filepath.Join(out, "state", "state.json.gz"), "-bitmaps", filepath.Join(out, "bitmaps"), "-base", base)
+	if err := cmdMerge(append(args, parts...)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// readTree returns every file below dir (state decoded), keyed by relative
+// path.
+func readTree(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		rel, _ := filepath.Rel(dir, path)
+		if strings.HasSuffix(path, ".gz") {
+			st, err := store.Load(path)
+			if err != nil {
+				return err
+			}
+			b, err := json.Marshal(st)
+			out[rel] = string(b)
+			return err
+		}
+		b, err := os.ReadFile(path)
+		out[rel] = string(b)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// Incremental publishing: each finished TLD is merged into the published
+// data on its own (the first run without any base), every later run merges
+// the same parts again, and the final merge of all parts gives the same
+// result as a single merge would.
+func TestCmdMergeIncrementalPublish(t *testing.T) {
+	root := t.TempDir()
+	day := time.Date(2026, 10, 27, 3, 0, 0, 0, time.UTC)
+	dev := filepath.Join(root, "parts", "dev")
+	io := filepath.Join(root, "parts", "io")
+	writeScanPart(t, dev, day, map[string]map[string]*store.Entry{"dev": {"q7": free(1)}}, nil)
+
+	// Run 1: no data release yet; only .dev is done (1-3 characters).
+	mergeInto(t, filepath.Join(root, "none"), filepath.Join(root, "r1"), nil, dev)
+	st, err := store.Load(filepath.Join(root, "r1", "state", "state.json.gz"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(st.TLDs) != 1 || st.ScanOf("io") != nil {
+		t.Errorf("run 1 state = %v, want only .dev (.io stays missing)", st.TLDs)
+	}
+
+	// Run 2: .io is done; .dev's part is still in the release.
+	writeScanPart(t, io, day.Add(time.Hour), map[string]map[string]*store.Entry{"io": {"x1": free(1)}}, map[string][]string{"io": {"x1x1"}})
+	mergeInto(t, filepath.Join(root, "r1"), filepath.Join(root, "r2"), nil, dev, io)
+
+	// Run 3: .dev's 4 character step is done; its part now has a bitmap.
+	writeScanPart(t, dev, day, map[string]map[string]*store.Entry{"dev": {"q7": free(1)}}, map[string][]string{"dev": {"q7q7"}})
+	mergeInto(t, filepath.Join(root, "r2"), filepath.Join(root, "r3"), nil, dev, io)
+
+	// Run 4 (final) merges the same parts again: nothing changes, and the
+	// result equals one merge of all parts.
+	mergeInto(t, filepath.Join(root, "r3"), filepath.Join(root, "r4"), nil, dev, io)
+	mergeInto(t, filepath.Join(root, "none"), filepath.Join(root, "once"), nil, dev, io)
+	r3, r4, once := readTree(t, filepath.Join(root, "r3")), readTree(t, filepath.Join(root, "r4")), readTree(t, filepath.Join(root, "once"))
+	if !reflect.DeepEqual(r3, r4) {
+		t.Errorf("merging the same parts again changed the data:\n%v\n%v", r3, r4)
+	}
+	if !reflect.DeepEqual(r4, once) {
+		t.Errorf("incremental result differs from a single merge:\n%v\n%v", r4, once)
+	}
+	if _, ok := r4[filepath.Join("bitmaps", "dev.bin")]; !ok {
+		t.Errorf("dev bitmap missing: %v", r4)
+	}
+}
+
+// The jump safeguard still compares against the data before the run: a
+// held TLD stays held (with its old data) when its part is merged again.
+func TestMergeOwnedHeldStaysHeldOnRemerge(t *testing.T) {
+	root := t.TempDir()
+	day1 := time.Date(2026, 10, 26, 3, 0, 0, 0, time.UTC)
+	many := map[string]*store.Entry{}
+	names.Each(2, 0, 1, func(_ int, s string) {
+		if len(many) < 300 {
+			many[s] = free(1)
+		}
+	})
+	writeScanPart(t, filepath.Join(root, "prev"), day1, map[string]map[string]*store.Entry{"dev": many}, nil)
+	part := filepath.Join(root, "dev")
+	writeScanPart(t, part, day1.AddDate(0, 0, 1), map[string]map[string]*store.Entry{"dev": {}}, nil)
+
+	base := filepath.Join(root, "prev")
+	for run := 1; run <= 2; run++ {
+		out := filepath.Join(root, "r"+strconv.Itoa(run))
+		mergeInto(t, base, out, []string{"-max-jump", "0.5", "-min-jump", "200"}, part)
+		st, err := store.Load(filepath.Join(out, "state", "state.json.gz"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sc := st.ScanOf("dev"); len(st.TLDs["dev"]) != 300 || sc.Held == "" || sc.At != day1.Unix() {
+			t.Errorf("run %d: dev has %d entries, scan %+v; want the old 300, held", run, len(st.TLDs["dev"]), sc)
+		}
+		base = out
 	}
 }

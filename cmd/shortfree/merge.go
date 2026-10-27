@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/maximilianfeix/shortfree/internal/names"
 	"github.com/maximilianfeix/shortfree/internal/store"
@@ -221,9 +222,33 @@ func checkComplete(st *store.State, bms map[string]store.Bitmap, covs map[string
 	return nil
 }
 
+// olderScan returns why cur (an input's sweep of a TLD) must not replace
+// base, or "". The scan workflow publishes each TLD as soon as its job is
+// done and merges the same parts again later, so base may already hold a
+// newer sweep than a left-over part: that part must never roll it back.
+func olderScan(base, cur *store.Scan) string {
+	if base == nil || cur == nil || cur.At >= base.At {
+		return ""
+	}
+	return fmt.Sprintf("its sweep (%s) is older than the base data (%s)", cur.ScannedAt().Format(time.RFC3339), base.ScannedAt().Format(time.RFC3339))
+}
+
+// newestShard returns when the most recent shard of c was swept (0 = none).
+func newestShard(c *store.Coverage) int64 {
+	var t int64
+	if c != nil {
+		for _, s := range c.Scans {
+			t = max(t, s.At)
+		}
+	}
+	return t
+}
+
 // mergeOwned starts from base (may be "") and replaces every TLD an input
-// owns with that input's copy, unless lim finds the copy implausible: then
-// the base data stays, marked as held.
+// owns with that input's copy, unless the copy is older than base (a
+// left-over part: base wins, see olderScan) or lim finds it implausible
+// (base wins, marked as held). Merging the same inputs into the result
+// again changes nothing, so incremental publishing can repeat it.
 func mergeOwned(base string, dirs []string, lim jumpLimit) (*store.State, map[string]store.Bitmap, map[string]*store.Coverage, error) {
 	out := &store.State{TLDs: map[string]map[string]*store.Entry{}}
 	bms := map[string]store.Bitmap{}
@@ -264,6 +289,10 @@ func mergeOwned(base string, dirs []string, lim jumpLimit) (*store.State, map[st
 				return nil, nil, nil, fmt.Errorf("merge: .%s state in both %s and %s", tld, prev, dir)
 			}
 			stateOwner[tld] = dir
+			if why := olderScan(prev.state.ScanOf(tld), p.state.ScanOf(tld)); why != "" {
+				warn(".%s output of %s ignored: %s", tld, dir, why)
+				continue
+			}
 			if old, ok := prev.state.TLDs[tld]; ok {
 				if why := lim.implausible("not-delegated 1-3 character names", notDelegated(old), notDelegated(m)); why != "" {
 					warn(".%s held: %s", tld, why)
@@ -282,6 +311,10 @@ func mergeOwned(base string, dirs []string, lim jumpLimit) (*store.State, map[st
 				return nil, nil, nil, fmt.Errorf("merge: .%s bitmap in both %s and %s", tld, prev, dir)
 			}
 			bitmapOwner[tld] = dir
+			if _, ok := prev.bitmaps[tld]; ok && p.covs[tld] != nil && newestShard(p.covs[tld]) < newestShard(prev.covs[tld]) {
+				warn(".%s 4 character output of %s ignored: older than the base bitmap", tld, dir)
+				continue
+			}
 			if old, ok := prev.bitmaps[tld]; ok {
 				if why := bitmapJump(lim, old, b, prev.covs[tld], p.covs[tld]); why != "" {
 					warn(".%s 4 characters held: %s", tld, why)

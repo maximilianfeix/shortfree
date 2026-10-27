@@ -29,6 +29,9 @@ runs:
         # Bitmaps (and their 4 character lists) only where they changed:
         # scan jobs still starting read their own TLD's bitmap while this
         # runs, and an upload with --clobber briefly removes the old asset.
+        # Early partial publishes may have no 4 character bitmaps yet.
+        shopt -s nullglob
+        mkdir -p bitmaps
         bins=() covs=()
         for f in bitmaps/*.bin; do
           t=$(basename "$f" .bin)
@@ -56,7 +59,8 @@ runs:
           # lists are left out (the bitmaps hold the same data, much smaller).
           cp release/verified-*.txt release/short-*.csv release/changes.json snapshot-src/
           cp data/stats.json data/coverage.json data/available.json snapshot-src/
-          cp bitmaps/*.bin snapshot-src/
+          allbins=(bitmaps/*.bin)
+          if ((${#allbins[@]})); then cp "${allbins[@]}" snapshot-src/; fi
           allcovs=(bitmaps/*.cov.json)
           if ((${#allcovs[@]})); then cp "${allcovs[@]}" snapshot-src/; fi
           assets=$(gh release view data --json assets -q '.assets[].name')
@@ -108,7 +112,7 @@ runs:
         cp brand/mark.svg brand/favicon.svg brand/social-preview.png _site/
         cp data/*.json _site/data/
         cp -r data/txt _site/data/
-        cp bitmaps/*.bin _site/data/4/
+        cp bitmaps/*.bin _site/data/4/ 2>/dev/null || true
         cp -r dist/api _site/api
         cp docs/openapi.yaml _site/api/
         ./shortfree pages -data data -bitmaps bitmaps -out _site

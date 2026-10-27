@@ -116,6 +116,7 @@ jobs:
           # Without a base (first run), TLDs no part owns stay missing:
           # export leaves them out instead of showing 0 free names.
           ./shortfree merge -base prev parts/*
+          mkdir -p bitmaps
           ls -la state bitmaps
 
       - uses: ./.github/actions/publish

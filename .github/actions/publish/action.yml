@@ -79,7 +79,15 @@ runs:
         gh release upload data state/state.json.gz --clobber
         if ((${#bins[@]})); then gh release upload data "${bins[@]}" --clobber; fi
         if ((${#covs[@]})); then gh release upload data "${covs[@]}" --clobber; fi
-        gh release upload data release/* --clobber
+        # GitHub rejects empty uploads (a TLD with no free names yields an
+        # empty list): upload the non-empty files, delete stale copies of the
+        # empty ones so no outdated list stays behind.
+        nonempty=() existing=$(gh release view data --json assets -q '.assets[].name')
+        for f in release/*; do
+          if [ -s "$f" ]; then nonempty+=("$f")
+          elif grep -qx "$(basename "$f")" <<<"$existing"; then gh release delete-asset data "$(basename "$f")" -y; fi
+        done
+        if ((${#nonempty[@]})); then gh release upload data "${nonempty[@]}" --clobber; fi
 
         if [ "$FINAL" = true ]; then
           gh release upload data snapshot/manifest.json --clobber

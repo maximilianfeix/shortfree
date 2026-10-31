@@ -206,7 +206,6 @@ xu.cc
 8-2.cc
 8-4.cc
 8-7.cc
-8-9.cc
 8-a.cc
 8-b.cc
 8-g.cc
@@ -275,6 +274,7 @@ i-7.cc
 i-9.cc
 i1z.cc
 i4s.cc
+i7d.cc
 j-0.cc
 j-8.cc
 j0a.cc

@@ -371,7 +371,6 @@ ye.net
 16q.net
 17q.net
 18i.net
-19n.net
 19p.net
 1a4.net
 1a6.net
@@ -628,7 +627,6 @@ ye.net
 2pz.net
 2q1.net
 2q3.net
-2q8.net
 2qb.net
 2qc.net
 2qe.net
@@ -1619,7 +1617,6 @@ ye.net
 6xc.net
 6xf.net
 6xj.net
-6xk.net
 6xo.net
 6xw.net
 6y1.net
@@ -1936,7 +1933,6 @@ ye.net
 84w.net
 85j.net
 85r.net
-86p.net
 87c.net
 87i.net
 87n.net
@@ -2490,7 +2486,6 @@ a6y.net
 a7d.net
 a7j.net
 a7q.net
-a8c.net
 a8d.net
 a8j.net
 a8t.net
@@ -2511,7 +2506,6 @@ b-0.net
 b-8.net
 b-9.net
 b06.net
-b07.net
 b09.net
 b0e.net
 b0j.net
@@ -3734,7 +3728,6 @@ qo0.net
 qo1.net
 qo8.net
 qo9.net
-qr7.net
 qs4.net
 qs6.net
 qt0.net

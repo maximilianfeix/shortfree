@@ -978,6 +978,7 @@ ye.net
 4mq.net
 4n0.net
 4n7.net
+4ne.net
 4nf.net
 4nq.net
 4nz.net
@@ -1662,6 +1663,7 @@ ye.net
 7-u.net
 7-z.net
 70a.net
+70z.net
 71b.net
 71n.net
 71z.net
@@ -3227,6 +3229,7 @@ lf9.net
 lg7.net
 lg8.net
 lh4.net
+li7.net
 lk0.net
 lk5.net
 ln5.net
@@ -3365,7 +3368,6 @@ nh9.net
 nj0.net
 nj3.net
 nj5.net
-nl0.net
 nq2.net
 nq7.net
 nt9.net
@@ -3492,6 +3494,7 @@ oq4.net
 oq6.net
 oq9.net
 ot5.net
+ou3.net
 ou9.net
 ov5.net
 ov6.net
@@ -3553,7 +3556,6 @@ p8l.net
 p8m.net
 p8u.net
 p8v.net
-p8y.net
 p9c.net
 p9d.net
 p9f.net
@@ -3684,7 +3686,6 @@ q9f.net
 q9h.net
 q9j.net
 q9m.net
-q9n.net
 q9o.net
 q9p.net
 q9s.net
@@ -4179,7 +4180,6 @@ w6c.net
 w6d.net
 w6g.net
 w6p.net
-w6q.net
 w6t.net
 w6u.net
 w6z.net
@@ -4480,7 +4480,6 @@ z6i.net
 z6j.net
 z6l.net
 z6n.net
-z6q.net
 z6w.net
 z6x.net
 z7d.net

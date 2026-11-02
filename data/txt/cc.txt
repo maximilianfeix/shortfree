@@ -82,7 +82,6 @@ xu.cc
 2-5.cc
 2-6.cc
 2-7.cc
-2-9.cc
 2-d.cc
 2-e.cc
 2-f.cc
@@ -155,7 +154,6 @@ xu.cc
 5-t.cc
 5-w.cc
 5-x.cc
-5c0.cc
 5o1.cc
 5o3.cc
 5q0.cc
@@ -275,6 +273,7 @@ i-9.cc
 i1z.cc
 i4s.cc
 i7d.cc
+im9.cc
 j-0.cc
 j-8.cc
 j0a.cc

@@ -55,7 +55,6 @@ xu.cc
 0xr.cc
 0yf.cc
 0yj.cc
-0yo.cc
 0yr.cc
 0yv.cc
 0z2.cc
@@ -189,7 +188,6 @@ xu.cc
 7-h.cc
 7-i.cc
 7-j.cc
-7-n.cc
 7-r.cc
 7-s.cc
 7-t.cc
@@ -279,7 +277,6 @@ j-8.cc
 j0a.cc
 j0c.cc
 j0g.cc
-j0m.cc
 j0p.cc
 j3o.cc
 j5o.cc
@@ -303,7 +300,6 @@ lr0.cc
 m-6.cc
 m-8.cc
 m-9.cc
-m0i.cc
 m9o.cc
 mj0.cc
 mq0.cc
@@ -427,10 +423,12 @@ w-1.cc
 w-5.cc
 w-7.cc
 w-8.cc
+w-g.cc
 w0i.cc
 w1o.cc
 x-6.cc
 y-0.cc
 y-1.cc
 y-3.cc
+yt3.cc
 z-2.cc

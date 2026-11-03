@@ -828,7 +828,6 @@ ye.net
 3w1.net
 3w7.net
 3w8.net
-3wb.net
 3wy.net
 3xw.net
 3y1.net
@@ -1682,7 +1681,6 @@ ye.net
 74b.net
 74l.net
 74o.net
-74q.net
 74v.net
 74y.net
 75i.net
@@ -2283,6 +2281,7 @@ ye.net
 9fe.net
 9fi.net
 9fk.net
+9fn.net
 9fq.net
 9fu.net
 9fv.net
@@ -2857,7 +2856,6 @@ gf0.net
 gj1.net
 gj9.net
 gq1.net
-gr9.net
 gu0.net
 gv9.net
 gy7.net
@@ -3794,7 +3792,6 @@ r9f.net
 r9j.net
 r9l.net
 r9o.net
-r9r.net
 r9w.net
 ra8.net
 rf5.net
@@ -4419,7 +4416,6 @@ yk6.net
 yk7.net
 yl1.net
 yn4.net
-yn7.net
 yo6.net
 yp5.net
 yq0.net

@@ -271,7 +271,6 @@ i-9.cc
 i1z.cc
 i4s.cc
 i7d.cc
-im9.cc
 j-0.cc
 j-8.cc
 j0a.cc
@@ -423,12 +422,10 @@ w-1.cc
 w-5.cc
 w-7.cc
 w-8.cc
-w-g.cc
 w0i.cc
 w1o.cc
 x-6.cc
 y-0.cc
 y-1.cc
 y-3.cc
-yt3.cc
 z-2.cc

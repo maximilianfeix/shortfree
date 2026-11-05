@@ -233,6 +233,7 @@ a-7.cc
 b-5.cc
 b-6.cc
 b-7.cc
+c-t.cc
 c0j.cc
 c6o.cc
 d-5.cc
@@ -270,7 +271,6 @@ i-7.cc
 i-9.cc
 i1z.cc
 i4s.cc
-i7d.cc
 j-0.cc
 j-8.cc
 j0a.cc
@@ -283,7 +283,6 @@ j6o.cc
 jq0.cc
 jw0.cc
 jz0.cc
-k1o.cc
 k5o.cc
 l-0.cc
 l-7.cc
@@ -414,7 +413,6 @@ u0a.cc
 u0f.cc
 u0r.cc
 u1o.cc
-ud0.cc
 v-2.cc
 v-6.cc
 v-9.cc

@@ -78,30 +78,30 @@ Binaries for Linux, macOS and Windows are attached to each [release](https://git
 
 <!-- shortfree:start -->
 
-_Last scan: **2026-11-04 03:22 UTC**. Updated automatically by GitHub Actions._
+_Last scan: **2026-11-05 03:22 UTC**. Updated automatically by GitHub Actions._
 
 | TLD | 1 char | 2 chars | 3 chars | 4 chars¹ | dropping² | list |
 |---|--:|--:|--:|--:|--:|---|
-| `.com` | 0 | 0 | 0 | 665,578 | 2 | [txt](data/txt/com.txt) |
-| `.net` | 0 | 13 | 4,517 | 1,467,086 | 219 | [txt](data/txt/net.txt) |
-| `.de` | 0 | 0 | 0 | 1,468,504 | 59 | [txt](data/txt/de.txt) |
-| `.ai` | 0 | 0 | 23,153 (+187?) | 1,708,808 | 159 | [txt](data/txt/ai.txt) |
-| `.io` | 0 | 35 | 21,135 | 1,696,093 | 346 | [txt](data/txt/io.txt) |
-| `.dev` | 25 | 679 | 34,130 (+159?) | 1,719,092 | 144 | [txt](data/txt/dev.txt) |
-| `.app` | 2 | 359 | 20,493 | 1,681,576 | 368 | [txt](data/txt/app.txt) |
-| `.tools` | 11 | 909 | 22,283 (+22,273?) | 1,769,290 | 34 | [txt](data/txt/tools.txt) |
-| `.co` | 0 | 47 | 23,033 | 1,713,524 | 372 | [txt](data/txt/co.txt) |
-| `.org` | 0 | 78 | 2,412 (+8,373?) | 1,506,548 | 64 | [txt](data/txt/org.txt) |
-| `.xyz` | 9 | 577 | 12,370 | 1,319,683 | 472 | [txt](data/txt/xyz.txt) |
-| `.so` | 0 | 0 | 45,133 | 1,769,282 | 51 | [txt](data/txt/so.txt) |
-| `.to` | 0 | 0 | 33,492 | 1,763,086 | 67 | [txt](data/txt/to.txt) |
-| `.cc` | 0 | 16 | 415 | 1,442,541 | 540 | [txt](data/txt/cc.txt) |
-| `.tv` | 2 | 96 (+727?) | 1,573 (+39,475?) | 1,742,187 | 8 | [txt](data/txt/tv.txt) |
-| `.fm` | 0 | 1,067 | 29,984 (+15,811?) | 1,770,004 | 0 | [txt](data/txt/fm.txt) |
-| `.is` | 0 | 62 (+26?) | 1,659 (+40,225?) | 1,765,870 | 0 | [txt](data/txt/is.txt) |
-| `.ly` | 0 | 0 | 0 | 1,768,811 | 0 | [txt](data/txt/ly.txt) |
-| `.run` | 0 | 688 | 22,634 (+20,769?) | 1,764,087 | 48 | [txt](data/txt/run.txt) |
-| `.inc` | 8 | 1,146 | 29,865 (+17,267?) | 1,772,095 | 17 | [txt](data/txt/inc.txt) |
+| `.com` | 0 | 0 | 0 | 665,951 | 2 | [txt](data/txt/com.txt) |
+| `.net` | 0 | 13 | 4,519 | 1,467,071 | 215 | [txt](data/txt/net.txt) |
+| `.de` | 0 | 0 | 0 | 1,468,500 | 59 | [txt](data/txt/de.txt) |
+| `.ai` | 0 | 1 | 23,341 | 1,708,779 | 150 | [txt](data/txt/ai.txt) |
+| `.io` | 0 | 35 | 21,139 | 1,696,053 | 834 | [txt](data/txt/io.txt) |
+| `.dev` | 25 | 679 | 34,289 | 1,719,039 | 127 | [txt](data/txt/dev.txt) |
+| `.app` | 2 | 359 | 20,494 | 1,681,492 | 363 | [txt](data/txt/app.txt) |
+| `.tools` | 11 | 909 | 24,919 (+19,576?) | 1,769,285 | 36 | [txt](data/txt/tools.txt) |
+| `.co` | 0 | 47 | 23,067 | 1,713,534 | 345 | [txt](data/txt/co.txt) |
+| `.org` | 0 | 78 | 2,658 (+8,114?) | 1,506,587 | 70 | [txt](data/txt/org.txt) |
+| `.xyz` | 9 | 577 | 12,359 | 1,319,508 | 468 | [txt](data/txt/xyz.txt) |
+| `.so` | 0 | 0 | 45,132 | 1,769,283 | 55 | [txt](data/txt/so.txt) |
+| `.to` | 0 | 0 | 33,490 | 1,763,069 | 63 | [txt](data/txt/to.txt) |
+| `.cc` | 0 | 16 | 413 | 1,442,351 | 535 | [txt](data/txt/cc.txt) |
+| `.tv` | 2 | 184 (+638?) | 1,673 (+39,375?) | 1,742,212 | 10 | [txt](data/txt/tv.txt) |
+| `.fm` | 0 | 1,067 | 33,579 (+12,212?) | 1,770,001 | 0 | [txt](data/txt/fm.txt) |
+| `.is` | 0 | 62 (+26?) | 1,853 (+40,030?) | 1,765,869 | 0 | [txt](data/txt/is.txt) |
+| `.ly` | 0 | 0 | 0 | 1,768,810 | 0 | [txt](data/txt/ly.txt) |
+| `.run` | 0 | 688 | 25,314 (+18,073?) | 1,764,077 | 53 | [txt](data/txt/run.txt) |
+| `.inc` | 8 | 1,146 | 33,453 (+13,667?) | 1,772,096 | 20 | [txt](data/txt/inc.txt) |
 
 ¹ not in the zone (DNS check only, not RDAP-verified). Full lists: [latest data release](../../releases/tag/data).  
 ² registered, but in redemption or pending delete. The RDAP expiration date is not a drop date.  
@@ -112,11 +112,13 @@ Counted names are not registered (RDAP 404). That does not prove a registrar wil
 
 Names the registry reported as registered or dropping that are now not registered (RDAP 404).
 
-`021.io` · `10c.co` · `12n.co` · `12t.io` · `16n.co` · `17u.co` · `2az.io` · `38c.io` · `3sk.io` · `4ls.io` · `589.io` · `889.so` · `9wd.co` · `bbi.io` · `btu.io` · `cai.so` · `f3c.co` · `g25.io` · `g37.io` · `hrd.so` · `i0n.io` · `ijz.io` · `jzf.io` · `n2g.io` · `n3a.io` · `na5.to` · `p3b.io` · `pw6.io` · `s-l.to` · `x7s.io`
+`mq.ai` · `0ta.io` · `12h.ai` · `1hi.ai` · `2kk.ai` · `2vv.co` · `36d.ai` · `3bx.ai` · `56n.co` · `753.ai` · `7pm.ai` · `9ft.io` · `a-o.co` · `a-w.co` · `a-y.co` · `b-f.co` · `bdu.ai` · `be8.ai` · `be8.io` · `c-t.cc` · `c-u.co` · `c-v.co` · `caq.ai` · `cbz.ai` · `cgg.ai` · `dp3.ai` · `e65.co` · `emz.ai` · `et1.co` · `f-o.co`
 
 ### Free 1–2 character domains
 
 **.net** – `0v.net` `2d.net` `4d.net` `68.net` `9y.net` `c0.net` `jv.net` `k4.net` `o4.net` `ol.net` `tj.net` `ue.net` `ye.net`
+
+**.ai** – `mq.ai`
 
 **.io** – `03.io` `1q.io` `1s.io` `3u.io` `4o.io` `5b.io` `5d.io` `5j.io` `5n.io` `6b.io` `6o.io` `6v.io` `6x.io` `7o.io` `8i.io` `8j.io` `8u.io` `96.io` `9n.io` `b0.io` `em.io` `f7.io` `g8.io` `j8.io` `kx.io` `lp.io` `m4.io` `nw.io` `p7.io` `r1.io` `vl.io` `x2.io` `y7.io` `ya.io` `yh.io`
 
@@ -154,9 +156,9 @@ Names the registry reported as registered or dropping that are now not registere
 
 **.cc** – `af.cc` `bs.cc` `cu.cc` `dn.cc` `dr.cc` `fl.cc` `fp.cc` `ld.cc` `mx.cc` `ny.cc` `oq.cc` `qu.cc` `sa.cc` `sc.cc` `th.cc` `xu.cc`
 
-<details><summary><b>.tv</b> – 98 names</summary>
+<details><summary><b>.tv</b> – 186 names</summary>
 
-`g.tv` `i.tv` `08.tv` `0a.tv` `0b.tv` `0c.tv` `0d.tv` `0e.tv` `0f.tv` `0g.tv` `0h.tv` `0i.tv` `0j.tv` `0k.tv` `0l.tv` `0m.tv` `0n.tv` `0o.tv` `0p.tv` `0q.tv` `0r.tv` `0s.tv` `0t.tv` `0u.tv` `0v.tv` `0w.tv` `0x.tv` `0y.tv` `0z.tv` `11.tv` `12.tv` `13.tv` `15.tv` `16.tv` `19.tv` `1a.tv` `1b.tv` `1c.tv` `1d.tv` `1e.tv` `1f.tv` `1g.tv` `1h.tv` `1i.tv` `1j.tv` `1k.tv` `1l.tv` `1m.tv` `1n.tv` `1o.tv` `1p.tv` `1q.tv` `1r.tv` `1t.tv` `1u.tv` `1v.tv` `1w.tv` `1x.tv` `1y.tv` `1z.tv` `21.tv` `23.tv` `26.tv` `27.tv` `29.tv` `2e.tv` `2f.tv` `2g.tv` `2h.tv` `2i.tv` `2j.tv` `2k.tv` `2l.tv` `2m.tv` `2n.tv` `2o.tv` `2q.tv` `2r.tv` `2v.tv` `2w.tv` `2y.tv` `2z.tv` `31.tv` `32.tv` `33.tv` `34.tv` `35.tv` `36.tv` `37.tv` `38.tv` `39.tv` `3a.tv` `3b.tv` `3f.tv` `3g.tv` `3h.tv` `3i.tv` `3j.tv`
+`g.tv` `i.tv` `08.tv` `0a.tv` `0b.tv` `0c.tv` `0d.tv` `0e.tv` `0f.tv` `0g.tv` `0h.tv` `0i.tv` `0j.tv` `0k.tv` `0l.tv` `0m.tv` `0n.tv` `0o.tv` `0p.tv` `0q.tv` `0r.tv` `0s.tv` `0t.tv` `0u.tv` `0v.tv` `0w.tv` `0x.tv` `0y.tv` `0z.tv` `11.tv` `12.tv` `13.tv` `15.tv` `16.tv` `19.tv` `1a.tv` `1b.tv` `1c.tv` `1d.tv` `1e.tv` `1f.tv` `1g.tv` `1h.tv` `1i.tv` `1j.tv` `1k.tv` `1l.tv` `1m.tv` `1n.tv` `1o.tv` `1p.tv` `1q.tv` `1r.tv` `1t.tv` `1u.tv` `1v.tv` `1w.tv` `1x.tv` `1y.tv` `1z.tv` `21.tv` `23.tv` `26.tv` `27.tv` `29.tv` `2e.tv` `2f.tv` `2g.tv` `2h.tv` `2i.tv` `2j.tv` `2k.tv` `2l.tv` `2m.tv` `2n.tv` `2o.tv` `2q.tv` `2r.tv` `2v.tv` `2w.tv` `2y.tv` `2z.tv` `31.tv` `32.tv` `33.tv` `34.tv` `35.tv` `36.tv` `37.tv` `38.tv` `39.tv` `3a.tv` `3b.tv` `3f.tv` `3g.tv` `3h.tv` `3i.tv` `3j.tv` `3k.tv` `3l.tv` `3n.tv` `3o.tv` `3q.tv` `3r.tv` `3s.tv` `3t.tv` `3u.tv` `3v.tv` `3w.tv` `3y.tv` `3z.tv` `40.tv` `41.tv` `42.tv` `43.tv` `44.tv` `45.tv` `46.tv` `47.tv` `49.tv` `4c.tv` `4e.tv` `4f.tv` `4j.tv` `4l.tv` `4m.tv` `4n.tv` `4o.tv` `4p.tv` `4r.tv` `4t.tv` `4v.tv` `4w.tv` `4y.tv` `4z.tv` `50.tv` `52.tv` `53.tv` `54.tv` `55.tv` `56.tv` `57.tv` `58.tv` `59.tv` `5a.tv` `5b.tv` `5c.tv` `5e.tv` `5h.tv` `5j.tv` `5l.tv` `5n.tv` `5o.tv` `5p.tv` `5q.tv` `5r.tv` `5s.tv` `5t.tv` `5v.tv` `5w.tv` `5x.tv` `5y.tv` `5z.tv` `60.tv` `61.tv` `62.tv` `63.tv` `64.tv` `65.tv` `66.tv` `67.tv` `68.tv` `6a.tv` `6b.tv` `6c.tv` `6d.tv` `6e.tv` `6f.tv` `6g.tv` `6h.tv` `6i.tv` `6j.tv` `6k.tv` `6l.tv` `6m.tv` `6n.tv`
 
 </details>
 

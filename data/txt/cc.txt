@@ -319,7 +319,6 @@ o2y.cc
 o3e.cc
 o3h.cc
 o3l.cc
-o3r.cc
 o3u.cc
 o3y.cc
 o4d.cc
@@ -334,7 +333,6 @@ o5b.cc
 o5d.cc
 o5g.cc
 o5j.cc
-o5m.cc
 o5q.cc
 o5s.cc
 o5v.cc
@@ -376,7 +374,6 @@ ot0.cc
 p-7.cc
 p0a.cc
 p0z.cc
-pd0.cc
 q-2.cc
 q-3.cc
 q-4.cc
@@ -387,7 +384,6 @@ q0k.cc
 q0s.cc
 q1i.cc
 q5o.cc
-qo3.cc
 qo4.cc
 r-6.cc
 r0g.cc
@@ -400,7 +396,6 @@ ro5.cc
 rp0.cc
 rq0.cc
 s-0.cc
-s0b.cc
 s0o.cc
 s6o.cc
 t-d.cc

@@ -1,12 +1,12 @@
 {
- "updated": "2026-11-05T03:22:20Z",
+ "updated": "2026-11-06T03:22:02Z",
  "max_evidence_age_days": 14,
  "scope": "ASCII LDH labels only (a-z, 0-9, inner hyphens, no -- at positions 3-4) of length 1-4 directly below each TLD. Internationalized (IDN, xn--) names are not covered.",
  "method": "1-3 characters: DNS NS query at the TLD's authoritative servers, then RDAP at the registry for names not in DNS (404 = not registered). 4 characters: DNS only, one of seven shards per day. Not registered does not mean registrable: reserved and premium names also answer 404. See https://github.com/maximilianfeix/shortfree/blob/main/docs/accuracy.md",
  "source": {
   "repository": "maximilianfeix/shortfree",
-  "commit": "358820a5433dba4b4cffe7d1a14d7dc6c5cd7ccf",
-  "run": "https://github.com/maximilianfeix/shortfree/actions/runs/41981547502"
+  "commit": "8aae5026f5812cadad3af41a35a2cf1b56d3f527",
+  "run": "https://github.com/maximilianfeix/shortfree/actions/runs/42177891855"
  },
  "order": [
   "com",
@@ -33,7 +33,7 @@
  "tlds": {
   "ai": {
    "status": "partial",
-   "scanned_at": "2026-11-05T03:22:15Z",
+   "scanned_at": "2026-11-06T03:21:55Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -49,16 +49,16 @@
      "unscanned": 0,
      "rdap_verified": 1,
      "oldest_check": "2026-11-05T03:22:15Z",
-     "median_age_days": 0
+     "median_age_days": 1
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 23491,
+     "rdap_verified": 23482,
      "oldest_check": "2026-10-27T08:29:20Z",
-     "median_age_days": 5
+     "median_age_days": 6
     },
     "4": {
      "valid": 1772928,
@@ -81,7 +81,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T07:32:19Z",
+       "scanned_at": "2026-11-06T05:32:07Z",
        "dns_unknown": 1
       },
       {
@@ -114,7 +114,7 @@
   },
   "app": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:12Z",
+   "scanned_at": "2026-11-06T03:22:02Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -124,7 +124,7 @@
      "unscanned": 0,
      "rdap_verified": 2,
      "oldest_check": "2026-10-27T08:29:18Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "2": {
      "valid": 1296,
@@ -133,16 +133,16 @@
      "unscanned": 0,
      "rdap_verified": 367,
      "oldest_check": "2026-10-27T08:29:18Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 20849,
+     "rdap_verified": 20837,
      "oldest_check": "2026-10-27T08:29:18Z",
-     "median_age_days": 6
+     "median_age_days": 7
     },
     "4": {
      "valid": 1772928,
@@ -165,7 +165,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:08:40Z",
+       "scanned_at": "2026-11-06T03:43:59Z",
        "dns_unknown": 0
       },
       {
@@ -198,7 +198,7 @@
   },
   "cc": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:10Z",
+   "scanned_at": "2026-11-06T03:21:55Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -214,14 +214,14 @@
      "unscanned": 0,
      "rdap_verified": 17,
      "oldest_check": "2026-10-27T08:29:16Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 947,
+     "rdap_verified": 946,
      "oldest_check": "2026-10-27T08:29:16Z",
      "median_age_days": 0
     },
@@ -246,7 +246,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T03:42:46Z",
+       "scanned_at": "2026-11-06T03:40:01Z",
        "dns_unknown": 0
       },
       {
@@ -279,7 +279,7 @@
   },
   "co": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:10Z",
+   "scanned_at": "2026-11-06T03:21:55Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -295,16 +295,16 @@
      "unscanned": 0,
      "rdap_verified": 47,
      "oldest_check": "2026-10-27T08:29:17Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 23412,
+     "rdap_verified": 23416,
      "oldest_check": "2026-10-27T08:29:17Z",
-     "median_age_days": 8
+     "median_age_days": 9
     },
     "4": {
      "valid": 1772928,
@@ -327,7 +327,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T03:41:44Z",
+       "scanned_at": "2026-11-06T03:38:27Z",
        "dns_unknown": 0
       },
       {
@@ -360,7 +360,7 @@
   },
   "com": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:11Z",
+   "scanned_at": "2026-11-06T03:21:58Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -381,7 +381,7 @@
      "dns_unknown": 0,
      "unscanned": 0,
      "rdap_verified": 2,
-     "oldest_check": "2026-11-05T03:22:11Z",
+     "oldest_check": "2026-11-06T03:21:58Z",
      "median_age_days": 0
     },
     "4": {
@@ -405,7 +405,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T03:38:39Z",
+       "scanned_at": "2026-11-06T03:35:36Z",
        "dns_unknown": 0
       },
       {
@@ -438,7 +438,7 @@
   },
   "de": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:09Z",
+   "scanned_at": "2026-11-06T03:21:59Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -459,7 +459,7 @@
      "dns_unknown": 0,
      "unscanned": 0,
      "rdap_verified": 59,
-     "oldest_check": "2026-11-05T03:22:09Z",
+     "oldest_check": "2026-11-06T03:21:59Z",
      "median_age_days": 0
     },
     "4": {
@@ -483,7 +483,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T03:39:12Z",
+       "scanned_at": "2026-11-06T03:36:06Z",
        "dns_unknown": 0
       },
       {
@@ -516,7 +516,7 @@
   },
   "dev": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:07Z",
+   "scanned_at": "2026-11-06T03:22:00Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -526,25 +526,25 @@
      "unscanned": 0,
      "rdap_verified": 25,
      "oldest_check": "2026-10-27T08:29:15Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "2": {
      "valid": 1296,
      "swept": 1296,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 682,
+     "rdap_verified": 681,
      "oldest_check": "2026-10-27T08:29:15Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 34413,
+     "rdap_verified": 34402,
      "oldest_check": "2026-10-27T08:29:15Z",
-     "median_age_days": 5
+     "median_age_days": 6
     },
     "4": {
      "valid": 1772928,
@@ -567,7 +567,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:08:41Z",
+       "scanned_at": "2026-11-06T03:38:34Z",
        "dns_unknown": 0
       },
       {
@@ -600,7 +600,7 @@
   },
   "fm": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:13Z",
+   "scanned_at": "2026-11-06T03:21:56Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -616,17 +616,17 @@
      "unscanned": 0,
      "rdap_verified": 1067,
      "oldest_check": "2026-10-27T08:29:17Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 33579,
-     "rdap_pending": 12212,
+     "rdap_verified": 37173,
+     "rdap_pending": 8615,
      "oldest_check": "2026-10-27T08:29:17Z",
-     "median_age_days": 4
+     "median_age_days": 5
     },
     "4": {
      "valid": 1772928,
@@ -649,7 +649,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:08:41Z",
+       "scanned_at": "2026-11-06T05:05:34Z",
        "dns_unknown": 0
       },
       {
@@ -682,7 +682,7 @@
   },
   "inc": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:09Z",
+   "scanned_at": "2026-11-06T03:21:57Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -692,7 +692,7 @@
      "unscanned": 0,
      "rdap_verified": 8,
      "oldest_check": "2026-10-27T08:29:22Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "2": {
      "valid": 1296,
@@ -701,17 +701,17 @@
      "unscanned": 0,
      "rdap_verified": 1149,
      "oldest_check": "2026-10-27T08:29:22Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 33470,
-     "rdap_pending": 13667,
+     "rdap_verified": 37065,
+     "rdap_pending": 10069,
      "oldest_check": "2026-10-27T08:29:22Z",
-     "median_age_days": 4
+     "median_age_days": 5
     },
     "4": {
      "valid": 1772928,
@@ -734,7 +734,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:08:39Z",
+       "scanned_at": "2026-11-06T05:05:34Z",
        "dns_unknown": 0
       },
       {
@@ -767,7 +767,7 @@
   },
   "io": {
    "status": "partial",
-   "scanned_at": "2026-11-05T03:22:14Z",
+   "scanned_at": "2026-11-06T03:21:59Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -783,21 +783,21 @@
      "unscanned": 0,
      "rdap_verified": 36,
      "oldest_check": "2026-10-27T08:29:15Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 21972,
+     "rdap_verified": 21943,
      "oldest_check": "2026-10-27T08:29:15Z",
-     "median_age_days": 5
+     "median_age_days": 6
     },
     "4": {
      "valid": 1772928,
      "swept": 1772928,
-     "dns_unknown": 15,
+     "dns_unknown": 13,
      "unscanned": 0,
      "shards": [
       {
@@ -815,8 +815,8 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T06:50:02Z",
-       "dns_unknown": 5
+       "scanned_at": "2026-11-06T06:18:22Z",
+       "dns_unknown": 3
       },
       {
        "shard": 3,
@@ -848,7 +848,7 @@
   },
   "is": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:11Z",
+   "scanned_at": "2026-11-06T03:21:57Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -863,19 +863,19 @@
      "dns_unknown": 0,
      "unscanned": 0,
      "rdap_verified": 62,
-     "rdap_pending": 26,
+     "rdap_pending": 25,
      "oldest_check": "2026-10-27T08:29:16Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 1853,
-     "rdap_pending": 40030,
+     "rdap_verified": 2050,
+     "rdap_pending": 39833,
      "oldest_check": "2026-10-27T08:29:16Z",
-     "median_age_days": 4
+     "median_age_days": 5
     },
     "4": {
      "valid": 1772928,
@@ -898,7 +898,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:08:42Z",
+       "scanned_at": "2026-11-06T05:05:34Z",
        "dns_unknown": 0
       },
       {
@@ -931,7 +931,7 @@
   },
   "ly": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:12Z",
+   "scanned_at": "2026-11-06T03:21:56Z",
    "min_length": 4,
    "lengths": {
     "1": {
@@ -973,7 +973,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T03:35:22Z",
+       "scanned_at": "2026-11-06T03:32:35Z",
        "dns_unknown": 0
       },
       {
@@ -1006,7 +1006,7 @@
   },
   "net": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:09Z",
+   "scanned_at": "2026-11-06T03:21:57Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -1022,16 +1022,16 @@
      "unscanned": 0,
      "rdap_verified": 13,
      "oldest_check": "2026-10-27T08:29:15Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 4734,
+     "rdap_verified": 4728,
      "oldest_check": "2026-10-27T08:29:15Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "4": {
      "valid": 1772928,
@@ -1054,7 +1054,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T03:40:30Z",
+       "scanned_at": "2026-11-06T03:37:27Z",
        "dns_unknown": 0
       },
       {
@@ -1087,7 +1087,7 @@
   },
   "org": {
    "status": "partial",
-   "scanned_at": "2026-11-05T03:22:08Z",
+   "scanned_at": "2026-11-06T03:21:58Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -1103,22 +1103,22 @@
      "unscanned": 0,
      "rdap_verified": 78,
      "oldest_check": "2026-10-27T08:29:21Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 2728,
-     "rdap_pending": 8114,
+     "rdap_verified": 2946,
+     "rdap_pending": 7883,
      "oldest_check": "2026-10-27T08:29:21Z",
-     "median_age_days": 4
+     "median_age_days": 5
     },
     "4": {
      "valid": 1772928,
      "swept": 1772928,
-     "dns_unknown": 27,
+     "dns_unknown": 34,
      "unscanned": 0,
      "shards": [
       {
@@ -1136,8 +1136,8 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:23:38Z",
-       "dns_unknown": 1
+       "scanned_at": "2026-11-06T05:21:33Z",
+       "dns_unknown": 8
       },
       {
        "shard": 3,
@@ -1169,7 +1169,7 @@
   },
   "run": {
    "status": "partial",
-   "scanned_at": "2026-11-05T03:22:20Z",
+   "scanned_at": "2026-11-06T03:21:58Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -1183,24 +1183,24 @@
      "swept": 1296,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 697,
+     "rdap_verified": 696,
      "oldest_check": "2026-10-27T08:29:18Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
-     "dns_unknown": 0,
+     "dns_unknown": 5,
      "unscanned": 0,
-     "rdap_verified": 25358,
-     "rdap_pending": 18073,
+     "rdap_verified": 28048,
+     "rdap_pending": 15370,
      "oldest_check": "2026-10-27T08:29:18Z",
-     "median_age_days": 4
+     "median_age_days": 5
     },
     "4": {
      "valid": 1772928,
      "swept": 1772928,
-     "dns_unknown": 5,
+     "dns_unknown": 49,
      "unscanned": 0,
      "shards": [
       {
@@ -1218,8 +1218,8 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T07:00:57Z",
-       "dns_unknown": 3
+       "scanned_at": "2026-11-06T06:58:02Z",
+       "dns_unknown": 47
       },
       {
        "shard": 3,
@@ -1250,8 +1250,8 @@
    }
   },
   "so": {
-   "status": "partial",
-   "scanned_at": "2026-11-05T03:22:11Z",
+   "status": "complete",
+   "scanned_at": "2026-11-06T03:21:56Z",
    "min_length": 3,
    "lengths": {
     "1": {
@@ -1271,14 +1271,14 @@
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 45187,
+     "rdap_verified": 45186,
      "oldest_check": "2026-10-27T08:29:21Z",
-     "median_age_days": 5
+     "median_age_days": 6
     },
     "4": {
      "valid": 1772928,
      "swept": 1772928,
-     "dns_unknown": 4,
+     "dns_unknown": 0,
      "unscanned": 0,
      "shards": [
       {
@@ -1296,8 +1296,8 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:29:55Z",
-       "dns_unknown": 4
+       "scanned_at": "2026-11-06T03:36:25Z",
+       "dns_unknown": 0
       },
       {
        "shard": 3,
@@ -1329,7 +1329,7 @@
   },
   "to": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:09Z",
+   "scanned_at": "2026-11-06T03:21:59Z",
    "min_length": 3,
    "lengths": {
     "1": {
@@ -1351,7 +1351,7 @@
      "unscanned": 0,
      "rdap_verified": 33553,
      "oldest_check": "2026-10-27T08:29:29Z",
-     "median_age_days": 6
+     "median_age_days": 7
     },
     "4": {
      "valid": 1772928,
@@ -1374,7 +1374,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:08:39Z",
+       "scanned_at": "2026-11-06T03:36:41Z",
        "dns_unknown": 0
       },
       {
@@ -1407,7 +1407,7 @@
   },
   "tools": {
    "status": "partial",
-   "scanned_at": "2026-11-05T03:22:10Z",
+   "scanned_at": "2026-11-06T03:21:59Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -1417,7 +1417,7 @@
      "unscanned": 0,
      "rdap_verified": 11,
      "oldest_check": "2026-10-27T08:29:22Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "2": {
      "valid": 1296,
@@ -1426,22 +1426,22 @@
      "unscanned": 0,
      "rdap_verified": 915,
      "oldest_check": "2026-10-27T08:29:22Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
-     "dns_unknown": 0,
+     "dns_unknown": 1,
      "unscanned": 0,
-     "rdap_verified": 24949,
-     "rdap_pending": 19576,
+     "rdap_verified": 27593,
+     "rdap_pending": 16870,
      "oldest_check": "2026-10-27T08:29:22Z",
-     "median_age_days": 4
+     "median_age_days": 5
     },
     "4": {
      "valid": 1772928,
      "swept": 1772928,
-     "dns_unknown": 35,
+     "dns_unknown": 39,
      "unscanned": 0,
      "shards": [
       {
@@ -1459,8 +1459,8 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T06:39:41Z",
-       "dns_unknown": 0
+       "scanned_at": "2026-11-06T06:59:04Z",
+       "dns_unknown": 4
       },
       {
        "shard": 3,
@@ -1492,7 +1492,7 @@
   },
   "tv": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:10Z",
+   "scanned_at": "2026-11-06T03:22:00Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -1502,27 +1502,27 @@
      "unscanned": 0,
      "rdap_verified": 2,
      "oldest_check": "2026-10-27T08:29:19Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "2": {
      "valid": 1296,
      "swept": 1296,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 185,
-     "rdap_pending": 638,
+     "rdap_verified": 273,
+     "rdap_pending": 550,
      "oldest_check": "2026-10-27T08:29:19Z",
-     "median_age_days": 8.8
+     "median_age_days": 1
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 1682,
-     "rdap_pending": 39375,
+     "rdap_verified": 1782,
+     "rdap_pending": 39275,
      "oldest_check": "2026-10-28T03:25:17Z",
-     "median_age_days": 4
+     "median_age_days": 5
     },
     "4": {
      "valid": 1772928,
@@ -1545,7 +1545,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:36:29Z",
+       "scanned_at": "2026-11-06T05:33:24Z",
        "dns_unknown": 0
       },
       {
@@ -1578,7 +1578,7 @@
   },
   "xyz": {
    "status": "complete",
-   "scanned_at": "2026-11-05T03:22:16Z",
+   "scanned_at": "2026-11-06T03:21:56Z",
    "min_length": 1,
    "lengths": {
     "1": {
@@ -1588,7 +1588,7 @@
      "unscanned": 0,
      "rdap_verified": 9,
      "oldest_check": "2026-10-27T08:29:17Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "2": {
      "valid": 1296,
@@ -1597,16 +1597,16 @@
      "unscanned": 0,
      "rdap_verified": 582,
      "oldest_check": "2026-10-27T08:29:17Z",
-     "median_age_days": 8.8
+     "median_age_days": 9.8
     },
     "3": {
      "valid": 47952,
      "swept": 47952,
      "dns_unknown": 0,
      "unscanned": 0,
-     "rdap_verified": 12822,
+     "rdap_verified": 12786,
      "oldest_check": "2026-10-27T08:29:17Z",
-     "median_age_days": 4
+     "median_age_days": 5
     },
     "4": {
      "valid": 1772928,
@@ -1629,7 +1629,7 @@
       {
        "shard": 2,
        "names": 246240,
-       "scanned_at": "2026-10-30T05:08:39Z",
+       "scanned_at": "2026-11-06T03:47:20Z",
        "dns_unknown": 0
       },
       {

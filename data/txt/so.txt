@@ -8165,6 +8165,7 @@
 663.so
 664.so
 665.so
+667.so
 668.so
 66a.so
 66b.so
@@ -27240,7 +27241,6 @@ lih.so
 lii.so
 lij.so
 lik.so
-lim.so
 lio.so
 liq.so
 lir.so
@@ -34884,6 +34884,7 @@ rs6.so
 rs7.so
 rs8.so
 rs9.so
+rsa.so
 rsb.so
 rsc.so
 rsd.so
@@ -36124,7 +36125,6 @@ sw6.so
 sw7.so
 sw8.so
 sw9.so
-swa.so
 swd.so
 swg.so
 swh.so

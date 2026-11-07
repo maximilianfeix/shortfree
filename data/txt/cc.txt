@@ -68,6 +68,7 @@ xu.cc
 1-f.cc
 1-j.cc
 1-k.cc
+1-o.cc
 1-q.cc
 1-r.cc
 1-s.cc
@@ -233,7 +234,6 @@ a-7.cc
 b-5.cc
 b-6.cc
 b-7.cc
-c-t.cc
 c0j.cc
 c6o.cc
 d-5.cc
@@ -280,7 +280,6 @@ j0p.cc
 j3o.cc
 j5o.cc
 j6o.cc
-jq0.cc
 jw0.cc
 jz0.cc
 k5o.cc

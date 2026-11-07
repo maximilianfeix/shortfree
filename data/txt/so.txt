@@ -36074,7 +36074,6 @@ suh.so
 suj.so
 suk.so
 suq.so
-sur.so
 sus.so
 sut.so
 suv.so

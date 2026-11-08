@@ -11680,6 +11680,7 @@
 8up.so
 8uq.so
 8ur.so
+8us.so
 8ut.so
 8uu.so
 8uv.so
@@ -29401,6 +29402,7 @@ nak.so
 nal.so
 nao.so
 naq.so
+nat.so
 naw.so
 nax.so
 nay.so
@@ -40872,6 +40874,7 @@ wom.so
 wop.so
 woq.so
 wor.so
+wos.so
 wou.so
 wov.so
 wox.so

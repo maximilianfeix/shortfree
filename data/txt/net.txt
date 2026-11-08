@@ -562,7 +562,6 @@ ye.net
 2fk.net
 2fq.net
 2fw.net
-2fz.net
 2g1.net
 2g7.net
 2g8.net
@@ -1371,7 +1370,6 @@ ye.net
 65n.net
 65o.net
 68o.net
-68w.net
 69o.net
 6a3.net
 6a8.net
@@ -2077,7 +2075,6 @@ ye.net
 8p3.net
 8p6.net
 8pb.net
-8pc.net
 8pd.net
 8pf.net
 8pq.net
@@ -2154,6 +2151,7 @@ ye.net
 8w9.net
 8wa.net
 8wc.net
+8wg.net
 8wj.net
 8wn.net
 8wr.net
@@ -3042,7 +3040,6 @@ j5s.net
 j5t.net
 j5z.net
 j65.net
-j6a.net
 j6e.net
 j6h.net
 j6i.net
@@ -3366,7 +3363,6 @@ nj3.net
 nj5.net
 nq2.net
 nq7.net
-nt9.net
 nv6.net
 nw5.net
 ny0.net

@@ -250,9 +250,9 @@ e0p.cc
 e1o.cc
 e4o.cc
 f-7.cc
+f-l.cc
 f0c.cc
 f0z.cc
-g-0.cc
 g-2.cc
 g-3.cc
 g0b.cc
@@ -406,7 +406,6 @@ u-9.cc
 u0a.cc
 u0f.cc
 u0r.cc
-u1o.cc
 v-2.cc
 v-6.cc
 v-9.cc

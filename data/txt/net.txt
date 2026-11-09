@@ -369,7 +369,6 @@ ye.net
 16o.net
 16q.net
 17j.net
-17q.net
 18i.net
 19p.net
 1a4.net
@@ -1285,7 +1284,6 @@ ye.net
 5vo.net
 5vs.net
 5vt.net
-5vw.net
 5vx.net
 5vz.net
 5w0.net
@@ -1556,7 +1554,6 @@ ye.net
 6ri.net
 6rk.net
 6rl.net
-6rm.net
 6ro.net
 6rs.net
 6s0.net
@@ -1955,7 +1952,6 @@ ye.net
 8c9.net
 8ca.net
 8cj.net
-8cr.net
 8ct.net
 8cu.net
 8cv.net
@@ -2487,6 +2483,7 @@ a6y.net
 a7d.net
 a7j.net
 a7q.net
+a82.net
 a8d.net
 a8j.net
 a8t.net
@@ -3128,6 +3125,7 @@ kb7.net
 kc0.net
 kc2.net
 kd4.net
+kf3.net
 kh0.net
 kn2.net
 kn7.net
@@ -3153,6 +3151,7 @@ l1h.net
 l1o.net
 l1q.net
 l1z.net
+l25.net
 l2w.net
 l3a.net
 l3e.net
@@ -3344,6 +3343,7 @@ n7g.net
 n7m.net
 n7q.net
 n7u.net
+n7x.net
 n7y.net
 n89.net
 n8o.net
@@ -3491,7 +3491,6 @@ ou9.net
 ov5.net
 ov6.net
 ov7.net
-ow0.net
 ow8.net
 oy5.net
 oy7.net

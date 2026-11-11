@@ -27,7 +27,6 @@ xu.cc
 0-t.cc
 0-v.cc
 0iw.cc
-0nf.cc
 0sd.cc
 0sg.cc
 0sj.cc
@@ -53,7 +52,6 @@ xu.cc
 0wi.cc
 0xj.cc
 0xr.cc
-0yf.cc
 0yj.cc
 0yr.cc
 0yv.cc
@@ -383,7 +381,6 @@ q0k.cc
 q0s.cc
 q1i.cc
 q5o.cc
-qo4.cc
 r-6.cc
 r0g.cc
 r0j.cc
@@ -391,7 +388,6 @@ r0o.cc
 r0v.cc
 r5o.cc
 rn0.cc
-ro5.cc
 rp0.cc
 rq0.cc
 s-0.cc
@@ -419,4 +415,5 @@ x-6.cc
 y-0.cc
 y-1.cc
 y-3.cc
+y-e.cc
 z-2.cc

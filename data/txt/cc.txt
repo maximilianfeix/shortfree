@@ -260,6 +260,7 @@ g0j.cc
 h-6.cc
 h-8.cc
 h-9.cc
+h-w.cc
 h0i.cc
 h0r.cc
 i-0.cc
@@ -279,7 +280,6 @@ j3o.cc
 j5o.cc
 j6o.cc
 jw0.cc
-jz0.cc
 k5o.cc
 l-0.cc
 l-7.cc

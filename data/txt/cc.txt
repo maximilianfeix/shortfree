@@ -295,6 +295,7 @@ lr0.cc
 m-6.cc
 m-8.cc
 m-9.cc
+m-f.cc
 m9o.cc
 mj0.cc
 n-0.cc
@@ -402,6 +403,7 @@ w-8.cc
 w0i.cc
 w1o.cc
 x-6.cc
+x-9.cc
 y-0.cc
 y-1.cc
 y-3.cc

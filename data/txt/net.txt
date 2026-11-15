@@ -768,6 +768,7 @@ ye.net
 3mv.net
 3n7.net
 3ni.net
+3nj.net
 3o6.net
 3o7.net
 3ob.net
@@ -1689,7 +1690,6 @@ ye.net
 7aq.net
 7at.net
 7b0.net
-7b9.net
 7bf.net
 7bh.net
 7bp.net
@@ -2371,6 +2371,7 @@ ye.net
 9q7.net
 9q8.net
 9qb.net
+9qe.net
 9qf.net
 9qg.net
 9qo.net
@@ -2498,7 +2499,6 @@ b0e.net
 b0j.net
 b0u.net
 b0v.net
-b34.net
 b3a.net
 b3f.net
 b3j.net
@@ -2646,7 +2646,6 @@ e1y.net
 e3b.net
 e3k.net
 e4v.net
-e4w.net
 e5a.net
 e5d.net
 e5m.net
@@ -2669,6 +2668,7 @@ e8j.net
 e8m.net
 e8o.net
 e8p.net
+e8t.net
 e9d.net
 e9h.net
 e9j.net
@@ -3138,7 +3138,6 @@ l1o.net
 l1q.net
 l1z.net
 l25.net
-l2w.net
 l3a.net
 l3e.net
 l3j.net
@@ -3814,7 +3813,6 @@ s1f.net
 s1q.net
 s1u.net
 s2j.net
-s34.net
 s3j.net
 s3u.net
 s5f.net
@@ -3999,7 +3997,6 @@ ua6.net
 ub3.net
 ud5.net
 ud6.net
-ue2.net
 uf1.net
 uf6.net
 ug0.net
@@ -4266,7 +4263,6 @@ xf2.net
 xg2.net
 xg5.net
 xh0.net
-xi3.net
 xi4.net
 xk0.net
 xk4.net
@@ -4451,6 +4447,7 @@ z6f.net
 z6i.net
 z6j.net
 z6l.net
+z6m.net
 z6n.net
 z6w.net
 z6x.net

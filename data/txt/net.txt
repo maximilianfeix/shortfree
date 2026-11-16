@@ -672,7 +672,6 @@ ye.net
 2zb.net
 2zd.net
 2ze.net
-2zf.net
 2zg.net
 2zm.net
 2zq.net
@@ -706,7 +705,6 @@ ye.net
 3dy.net
 3e0.net
 3e2.net
-3e6.net
 3e9.net
 3ek.net
 3el.net
@@ -805,6 +803,7 @@ ye.net
 3s7.net
 3s8.net
 3sw.net
+3t8.net
 3t9.net
 3tf.net
 3tq.net
@@ -2645,7 +2644,6 @@ e1j.net
 e1y.net
 e3b.net
 e3k.net
-e4v.net
 e5a.net
 e5d.net
 e5m.net
@@ -3006,7 +3004,6 @@ j3o.net
 j3y.net
 j41.net
 j46.net
-j4r.net
 j4v.net
 j52.net
 j57.net
@@ -3085,7 +3082,6 @@ k5f.net
 k5h.net
 k5j.net
 k5o.net
-k5w.net
 k61.net
 k6e.net
 k6f.net
@@ -3940,6 +3936,7 @@ u3z.net
 u40.net
 u4c.net
 u4j.net
+u4n.net
 u4q.net
 u56.net
 u5g.net

@@ -18399,7 +18399,6 @@ dem.fm
 deo.fm
 deq.fm
 der.fm
-des.fm
 det.fm
 deu.fm
 dex.fm
@@ -28475,7 +28474,6 @@ len.fm
 lep.fm
 leq.fm
 ler.fm
-les.fm
 let.fm
 leu.fm
 lf0.fm

@@ -2955,7 +2955,6 @@ i7k.net
 i7l.net
 i7u.net
 i7y.net
-i87.net
 i8b.net
 i8g.net
 i8h.net
@@ -4399,7 +4398,6 @@ ys3.net
 ys6.net
 yu1.net
 yu5.net
-yu8.net
 yv0.net
 yv1.net
 yv7.net
@@ -4410,7 +4408,9 @@ yz6.net
 z-5.net
 z-9.net
 z05.net
+z0b.net
 z0f.net
+z0s.net
 z0u.net
 z0w.net
 z1h.net

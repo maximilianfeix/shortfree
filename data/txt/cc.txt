@@ -236,7 +236,6 @@ e-0.cc
 e-1.cc
 e-5.cc
 e-8.cc
-e-x.cc
 e0i.cc
 e0o.cc
 e0p.cc
@@ -247,6 +246,7 @@ f0c.cc
 f0z.cc
 g-2.cc
 g-3.cc
+g-o.cc
 g0b.cc
 g0f.cc
 g0h.cc

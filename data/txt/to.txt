@@ -6752,6 +6752,7 @@
 5m8.to
 5m9.to
 5ma.to
+5mb.to
 5mc.to
 5md.to
 5me.to
@@ -20862,7 +20863,6 @@ kof.to
 koh.to
 koj.to
 koq.to
-kov.to
 kow.to
 koy.to
 koz.to
@@ -26708,6 +26708,7 @@ s2g.to
 s2h.to
 s2j.to
 s2l.to
+s2m.to
 s2n.to
 s2q.to
 s2r.to
@@ -27697,7 +27698,6 @@ te9.to
 teb.to
 tef.to
 teh.to
-tei.to
 tey.to
 tf0.to
 tf2.to
@@ -30125,7 +30125,6 @@ vyi.to
 vyj.to
 vyk.to
 vym.to
-vyo.to
 vyp.to
 vyq.to
 vyr.to

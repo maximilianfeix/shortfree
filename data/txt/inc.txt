@@ -24482,6 +24482,7 @@ hs8.inc
 hs9.inc
 hsa.inc
 hsb.inc
+hsd.inc
 hse.inc
 hsf.inc
 hsg.inc

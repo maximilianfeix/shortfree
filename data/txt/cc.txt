@@ -142,6 +142,7 @@ xu.cc
 5-e.cc
 5-i.cc
 5-n.cc
+5-o.cc
 5-r.cc
 5-t.cc
 5-w.cc
@@ -372,6 +373,8 @@ r5o.cc
 rn0.cc
 rq0.cc
 s-0.cc
+s-4.cc
+s-5.cc
 s0o.cc
 s6o.cc
 t-d.cc

@@ -13919,6 +13919,7 @@ alk.so
 aln.so
 alq.so
 alr.so
+alv.so
 alw.so
 alx.so
 alz.so
@@ -32317,7 +32318,6 @@ pr6.so
 pr7.so
 pr8.so
 pr9.so
-pra.so
 prb.so
 prc.so
 prf.so
@@ -35747,6 +35747,7 @@ si9.so
 sib.so
 sic.so
 sie.so
+sih.so
 sii.so
 sij.so
 sik.so

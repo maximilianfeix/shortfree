@@ -12838,6 +12838,7 @@ auh.to
 auj.to
 aup.to
 auq.to
+aut.to
 auw.to
 auy.to
 av0.to
@@ -28010,6 +28011,7 @@ u-n.to
 u-o.to
 u-p.to
 u-q.to
+u-s.to
 u-t.to
 u-v.to
 u-w.to

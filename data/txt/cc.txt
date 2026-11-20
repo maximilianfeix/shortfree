@@ -110,7 +110,6 @@ xu.cc
 3i0.cc
 3jo.cc
 3ow.cc
-3oy.cc
 3s0.cc
 4-0.cc
 4-3.cc
@@ -242,7 +241,6 @@ f0c.cc
 f0z.cc
 g-2.cc
 g-3.cc
-g-o.cc
 g0b.cc
 g0f.cc
 g0h.cc
@@ -289,6 +287,7 @@ m-9.cc
 m-f.cc
 m9o.cc
 mj0.cc
+mxq.cc
 n-0.cc
 n-7.cc
 n-y.cc
@@ -403,4 +402,3 @@ y-3.cc
 y-e.cc
 y-u.cc
 z-2.cc
-z-x.cc

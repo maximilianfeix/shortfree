@@ -465,7 +465,6 @@ ye.net
 1r5.net
 1r7.net
 1rj.net
-1ro.net
 1rz.net
 1s4.net
 1s6.net
@@ -495,7 +494,6 @@ ye.net
 1wu.net
 1wy.net
 1wz.net
-1xr.net
 1y4.net
 1y5.net
 1y8.net
@@ -516,6 +514,7 @@ ye.net
 20e.net
 21q.net
 23h.net
+23p.net
 25j.net
 26i.net
 26o.net
@@ -1480,7 +1479,6 @@ ye.net
 6na.net
 6nh.net
 6nj.net
-6nk.net
 6nl.net
 6nq.net
 6nt.net
@@ -2360,7 +2358,6 @@ ye.net
 9va.net
 9vb.net
 9vc.net
-9vd.net
 9vf.net
 9vl.net
 9vt.net
@@ -2534,7 +2531,6 @@ c9q.net
 c9t.net
 c9u.net
 c9y.net
-cd4.net
 ce4.net
 cl4.net
 cm9.net
@@ -2571,7 +2567,6 @@ d9u.net
 d9w.net
 do0.net
 dt7.net
-dt8.net
 dv7.net
 dy0.net
 e-0.net
@@ -2717,7 +2712,6 @@ fz0.net
 g-3.net
 g-5.net
 g-8.net
-g0c.net
 g0h.net
 g0j.net
 g0m.net
@@ -3279,7 +3273,6 @@ n9d.net
 n9g.net
 n9w.net
 n9y.net
-ng7.net
 nh9.net
 nj0.net
 nj3.net
@@ -3287,7 +3280,6 @@ nj5.net
 nq2.net
 nq7.net
 nv6.net
-nw5.net
 ny0.net
 nz3.net
 o-6.net
@@ -4177,7 +4169,6 @@ x8m.net
 x8r.net
 x8t.net
 x8y.net
-x9c.net
 x9h.net
 x9i.net
 x9j.net

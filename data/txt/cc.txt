@@ -281,13 +281,13 @@ lc0.cc
 lj0.cc
 lq0.cc
 lr0.cc
+m-5.cc
 m-6.cc
 m-8.cc
 m-9.cc
 m-f.cc
 m9o.cc
 mj0.cc
-mxq.cc
 n-0.cc
 n-7.cc
 n-y.cc
@@ -374,6 +374,7 @@ rq0.cc
 s-0.cc
 s-4.cc
 s-5.cc
+s-8.cc
 s0o.cc
 s6o.cc
 t-d.cc

@@ -126,7 +126,6 @@ xu.cc
 4-t.cc
 4-v.cc
 4-w.cc
-4f0.cc
 4i1.cc
 4n0.cc
 4o5.cc
@@ -170,7 +169,6 @@ xu.cc
 6o1.cc
 6o4.cc
 6o7.cc
-6r0.cc
 7-4.cc
 7-6.cc
 7-8.cc

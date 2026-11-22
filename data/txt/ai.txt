@@ -12118,7 +12118,6 @@ dg2.ai
 dg3.ai
 dg5.ai
 dg6.ai
-dg7.ai
 dg9.ai
 dh0.ai
 dh4.ai
@@ -17694,7 +17693,6 @@ p2v.ai
 p2w.ai
 p2y.ai
 p2z.ai
-p31.ai
 p32.ai
 p34.ai
 p35.ai

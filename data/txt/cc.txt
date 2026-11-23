@@ -134,6 +134,7 @@ xu.cc
 4oi.cc
 4p0.cc
 4q0.cc
+4ui.cc
 5-3.cc
 5-a.cc
 5-d.cc
@@ -150,7 +151,6 @@ xu.cc
 5q0.cc
 5y0.cc
 6-3.cc
-6-b.cc
 6-e.cc
 6-f.cc
 6-g.cc

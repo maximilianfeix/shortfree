@@ -813,6 +813,7 @@ ye.net
 3w1.net
 3w7.net
 3w8.net
+3wq.net
 3wy.net
 3xw.net
 3y1.net
@@ -2501,7 +2502,6 @@ c1j.net
 c1p.net
 c1q.net
 c1y.net
-c1z.net
 c4o.net
 c5d.net
 c5j.net
@@ -2901,8 +2901,6 @@ i8y.net
 i97.net
 i9f.net
 i9j.net
-i9p.net
-i9w.net
 ig6.net
 ig7.net
 ih9.net
@@ -3002,13 +3000,13 @@ jv9.net
 jw0.net
 jx0.net
 jy0.net
+jz3.net
 k-5.net
 k0l.net
 k0s.net
 k1g.net
 k1i.net
 k1j.net
-k3b.net
 k3w.net
 k4g.net
 k4q.net
@@ -3040,7 +3038,6 @@ kb7.net
 kc0.net
 kc2.net
 kd4.net
-kf3.net
 kh0.net
 kn2.net
 kn7.net
@@ -3272,6 +3269,7 @@ n9d.net
 n9g.net
 n9w.net
 n9y.net
+nf9.net
 nh9.net
 nj0.net
 nj3.net

@@ -478,7 +478,6 @@ ye.net
 1u4.net
 1u5.net
 1uf.net
-1ug.net
 1ul.net
 1uq.net
 1uw.net
@@ -843,7 +842,6 @@ ye.net
 41c.net
 41i.net
 41l.net
-41r.net
 42l.net
 42r.net
 42v.net
@@ -1291,6 +1289,7 @@ ye.net
 5yn.net
 5yp.net
 5yv.net
+5yz.net
 5z0.net
 5z1.net
 5z2.net
@@ -2064,7 +2063,6 @@ ye.net
 8t1.net
 8t2.net
 8t4.net
-8te.net
 8tj.net
 8tl.net
 8tq.net
@@ -2085,6 +2083,7 @@ ye.net
 8v5.net
 8v7.net
 8vd.net
+8ve.net
 8vf.net
 8vg.net
 8vi.net
@@ -2284,6 +2283,7 @@ ye.net
 9mk.net
 9mq.net
 9n0.net
+9n5.net
 9n6.net
 9n7.net
 9nd.net
@@ -2533,7 +2533,6 @@ c9p.net
 c9q.net
 c9t.net
 c9u.net
-c9y.net
 ce4.net
 cl4.net
 cm9.net
@@ -2543,6 +2542,7 @@ d1q.net
 d37.net
 d3i.net
 d4q.net
+d5j.net
 d5o.net
 d5q.net
 d5v.net
@@ -2736,6 +2736,7 @@ g5t.net
 g5x.net
 g5z.net
 g6c.net
+g6i.net
 g6l.net
 g6p.net
 g6q.net
@@ -3269,7 +3270,6 @@ n9d.net
 n9g.net
 n9w.net
 n9y.net
-nf9.net
 nh9.net
 nj0.net
 nj3.net
@@ -3524,7 +3524,6 @@ q2v.net
 q34.net
 q3g.net
 q3m.net
-q3n.net
 q3u.net
 q3v.net
 q4a.net
@@ -4084,6 +4083,7 @@ w7r.net
 w7v.net
 w7y.net
 w82.net
+w8g.net
 w8j.net
 w8o.net
 w8q.net
@@ -4285,6 +4285,7 @@ y8n.net
 y8u.net
 y8v.net
 y8w.net
+y8z.net
 y97.net
 y9b.net
 y9e.net

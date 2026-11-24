@@ -5117,6 +5117,7 @@
 4af.to
 4ag.to
 4ah.to
+4ai.to
 4aj.to
 4ak.to
 4al.to
@@ -20864,6 +20865,7 @@ kof.to
 koh.to
 koj.to
 koq.to
+kor.to
 kow.to
 koy.to
 koz.to
@@ -22512,6 +22514,7 @@ n-q.to
 n-r.to
 n-s.to
 n-t.to
+n-u.to
 n-v.to
 n-w.to
 n-x.to
@@ -28858,7 +28861,6 @@ urq.to
 urr.to
 urt.to
 uru.to
-urv.to
 urw.to
 ury.to
 urz.to

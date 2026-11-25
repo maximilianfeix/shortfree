@@ -16350,6 +16350,7 @@ cok.so
 col.so
 cop.so
 coq.so
+cor.so
 cot.so
 cou.so
 cov.so
@@ -31189,6 +31190,7 @@ ot7.so
 ot8.so
 ot9.so
 otb.so
+otc.so
 otd.so
 otf.so
 otg.so

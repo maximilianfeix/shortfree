@@ -93,7 +93,6 @@ xu.cc
 2g0.cc
 2l0.cc
 2o4.cc
-2oy.cc
 2q0.cc
 3-0.cc
 3-2.cc
@@ -109,7 +108,6 @@ xu.cc
 3-y.cc
 3i0.cc
 3jo.cc
-3ow.cc
 3s0.cc
 4-0.cc
 4-3.cc
@@ -180,9 +178,7 @@ xu.cc
 7-s.cc
 7-t.cc
 7-w.cc
-7n0.cc
 7o0.cc
-7o1.cc
 7o4.cc
 7od.cc
 8-0.cc
@@ -276,7 +272,6 @@ l7o.cc
 l8o.cc
 lc0.cc
 lj0.cc
-lq0.cc
 lr0.cc
 m-5.cc
 m-6.cc
@@ -306,19 +301,15 @@ o3u.cc
 o3y.cc
 o4d.cc
 o4f.cc
-o4h.cc
 o4j.cc
 o4n.cc
-o4s.cc
 o4w.cc
 o4z.cc
 o5b.cc
 o5d.cc
 o5g.cc
-o5j.cc
 o5q.cc
 o5s.cc
-o5v.cc
 o5y.cc
 o5z.cc
 o6f.cc
@@ -344,10 +335,8 @@ o9v.cc
 od0.cc
 og9.cc
 oie.cc
-ol1.cc
 oq0.cc
 oq6.cc
-oq9.cc
 p-7.cc
 p0a.cc
 p0z.cc

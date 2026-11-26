@@ -20,6 +20,7 @@ xu.cc
 0-g.cc
 0-h.cc
 0-j.cc
+0-k.cc
 0-l.cc
 0-n.cc
 0-q.cc
@@ -216,7 +217,6 @@ a-7.cc
 b-5.cc
 b-6.cc
 b-7.cc
-c0j.cc
 c6o.cc
 d-5.cc
 d-8.cc
@@ -361,7 +361,6 @@ s-0.cc
 s-4.cc
 s-5.cc
 s-8.cc
-s0o.cc
 s6o.cc
 t-d.cc
 t0o.cc

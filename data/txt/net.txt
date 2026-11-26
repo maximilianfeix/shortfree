@@ -20,7 +20,6 @@ ye.net
 02i.net
 02j.net
 02m.net
-02o.net
 02x.net
 03c.net
 03e.net
@@ -444,6 +443,7 @@ ye.net
 1p4.net
 1p6.net
 1p7.net
+1pi.net
 1pz.net
 1q0.net
 1q5.net
@@ -755,7 +755,6 @@ ye.net
 3m9.net
 3mv.net
 3n7.net
-3ni.net
 3nj.net
 3o6.net
 3o7.net
@@ -896,7 +895,6 @@ ye.net
 4e6.net
 4e7.net
 4e9.net
-4eh.net
 4ey.net
 4f2.net
 4f6.net
@@ -3035,6 +3033,7 @@ k7v.net
 k8q.net
 k9l.net
 k9q.net
+k9r.net
 ka0.net
 kb7.net
 kc0.net
@@ -3157,7 +3156,6 @@ lq9.net
 lr5.net
 lr7.net
 ls7.net
-lv5.net
 lw4.net
 lw5.net
 lw7.net
@@ -3400,7 +3398,6 @@ oq9.net
 ot5.net
 ou3.net
 ou9.net
-ov5.net
 ov6.net
 ov7.net
 ow8.net
@@ -3425,7 +3422,6 @@ p1j.net
 p1l.net
 p1w.net
 p3h.net
-p3i.net
 p3o.net
 p3w.net
 p4z.net
@@ -3590,7 +3586,6 @@ q9p.net
 q9s.net
 q9y.net
 qa7.net
-qa8.net
 qb0.net
 qd3.net
 qd6.net
@@ -4137,6 +4132,7 @@ x2l.net
 x2w.net
 x3v.net
 x4c.net
+x4f.net
 x4h.net
 x4p.net
 x4q.net

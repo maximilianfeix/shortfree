@@ -22392,6 +22392,7 @@ hmd.so
 hme.so
 hmf.so
 hmg.so
+hmh.so
 hmi.so
 hmj.so
 hmk.so
@@ -40441,6 +40442,7 @@ wbo.so
 wbp.so
 wbq.so
 wbr.so
+wbs.so
 wbt.so
 wbu.so
 wbv.so

@@ -37,7 +37,6 @@ xu.cc
 0ti.cc
 0tj.cc
 0tn.cc
-0tp.cc
 0tz.cc
 0ub.cc
 0uf.cc
@@ -251,7 +250,6 @@ i-5.cc
 i-7.cc
 i-9.cc
 i1z.cc
-i4s.cc
 j-0.cc
 j-8.cc
 j0a.cc
@@ -284,6 +282,7 @@ n-0.cc
 n-7.cc
 n-y.cc
 n0l.cc
+o-l.cc
 o0t.cc
 o1d.cc
 o1f.cc
@@ -292,8 +291,6 @@ o1j.cc
 o1r.cc
 o1v.cc
 o1z.cc
-o2w.cc
-o2y.cc
 o3e.cc
 o3h.cc
 o3l.cc
@@ -338,6 +335,7 @@ oie.cc
 oq0.cc
 oq6.cc
 p-7.cc
+p-y.cc
 p0a.cc
 p0z.cc
 q-2.cc

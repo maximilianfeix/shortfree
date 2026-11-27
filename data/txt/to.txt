@@ -15260,6 +15260,7 @@ e2u.to
 e2v.to
 e2w.to
 e2x.to
+e2y.to
 e2z.to
 e30.to
 e31.to
@@ -17841,7 +17842,6 @@ h3y.to
 h3z.to
 h40.to
 h41.to
-h42.to
 h43.to
 h44.to
 h45.to
@@ -19450,7 +19450,6 @@ izt.to
 izv.to
 izw.to
 izx.to
-izy.to
 izz.to
 j-0.to
 j-1.to
@@ -29495,7 +29494,6 @@ vae.to
 vaf.to
 vaj.to
 vak.to
-vam.to
 vao.to
 vaq.to
 vaz.to
@@ -30019,7 +30017,6 @@ vv6.to
 vv7.to
 vv8.to
 vv9.to
-vvb.to
 vvd.to
 vve.to
 vvf.to
@@ -31282,6 +31279,7 @@ x83.to
 x84.to
 x85.to
 x87.to
+x88.to
 x89.to
 x8a.to
 x8b.to
@@ -31371,7 +31369,6 @@ xar.to
 xas.to
 xat.to
 xaw.to
-xax.to
 xaz.to
 xb0.to
 xb1.to

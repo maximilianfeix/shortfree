@@ -335,7 +335,6 @@ oie.cc
 oq0.cc
 oq6.cc
 p-7.cc
-p-y.cc
 p0a.cc
 p0z.cc
 q-2.cc

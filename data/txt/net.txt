@@ -389,7 +389,6 @@ ye.net
 1cl.net
 1d0.net
 1d9.net
-1dv.net
 1ep.net
 1ew.net
 1f4.net
@@ -675,6 +674,7 @@ ye.net
 31u.net
 31v.net
 31z.net
+32p.net
 34a.net
 35b.net
 35o.net
@@ -2567,6 +2567,7 @@ d9k.net
 d9u.net
 d9w.net
 do0.net
+do6.net
 dt7.net
 dv7.net
 dy0.net
@@ -2772,7 +2773,6 @@ gd0.net
 gf0.net
 gj9.net
 gu0.net
-gv9.net
 gy7.net
 gy9.net
 h-6.net
@@ -3088,7 +3088,6 @@ l62.net
 l6a.net
 l6c.net
 l6f.net
-l6g.net
 l6o.net
 l6p.net
 l6q.net
@@ -3650,7 +3649,6 @@ r1u.net
 r1v.net
 r1y.net
 r1z.net
-r43.net
 r4j.net
 r4q.net
 r5c.net
@@ -3669,7 +3667,6 @@ r6l.net
 r6q.net
 r6u.net
 r6z.net
-r78.net
 r7c.net
 r7i.net
 r7j.net
@@ -3774,6 +3771,7 @@ t0v.net
 t0w.net
 t1z.net
 t2h.net
+t2k.net
 t3j.net
 t3w.net
 t4j.net
@@ -4384,7 +4382,6 @@ z7k.net
 z7l.net
 z7o.net
 z7p.net
-z7s.net
 z7v.net
 z82.net
 z8d.net
@@ -4395,6 +4392,7 @@ z8p.net
 z8q.net
 z8r.net
 z8u.net
+z9b.net
 z9c.net
 z9d.net
 z9g.net
